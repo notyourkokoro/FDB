@@ -1,0 +1,51 @@
+services:
+  database:
+    container_name: fdb_database
+    image: postgres:latest
+    hostname: database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: main
+    volumes:
+      - ./data/database:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "main"]
+      start_period: 2s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - fdb_network
+
+  auth_service:
+    image: fdb-auth_service
+    container_name: fbd_auth_service
+    build: ./auth_service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/main
+      - SECRET_KEY=secret_key
+    volumes:
+      - ./auth_service:/srv/app
+    ports:
+      - "8000:8000"
+    command: "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    depends_on:
+      - database
+    healthcheck:
+      test: [ "CMD-SHELL", "curl localhost:8000/docs" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - fdb_network
+
+networks:
+    fdb_network:
+        name: fdb_network
+        driver: bridge
