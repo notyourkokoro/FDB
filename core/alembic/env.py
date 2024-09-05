@@ -19,7 +19,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.database import Base  # noqa E402
-from app.models import User  # noqa E402, F401
+from app.auth_service.models import User  # noqa E402, F401
+from app.storage_service.models import StorageFile, FileType  # noqa E402, F401
 
 target_metadata = Base.metadata
 

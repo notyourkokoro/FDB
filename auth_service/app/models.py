@@ -5,4 +5,5 @@ from app.database import Base
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    __tablename__ = "users"
     pass

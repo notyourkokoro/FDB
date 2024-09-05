@@ -1,9 +1,10 @@
 database_name  = main
 DOCKER_COMP    = docker compose -f docker-compose.yml
 EXEC	       = $(DOCKER_COMP) exec
-UV			   = $(EXEC)
-DEFAULT_IMAGES = fdb-auth_service
+CORE		   = @$(EXEC) core uv
+DEFAULT_IMAGES = fdb-auth_service fdb-storage_service core
 
+# ---------- Docker containers ----------
 up:
 	@$(DOCKER_COMP) up --detach --wait
 
@@ -15,7 +16,14 @@ full-clean:
 	@docker rmi $(DEFAULT_IMAGES) || exit 0;
 
 # ---------- Database ----------
-# revision:
-# 	@$(UV) run alembic revision --autogenerate -m "Initial User table"
-# head:
-# 	alembic upgrade head
+migrations:
+	@$(CORE) run alembic revision --autogenerate -m "$(comment)"
+
+migrate:
+	@$(CORE) run alembic upgrade head
+
+downgrade:
+	@$(CORE) run alembic downgrade -1
+
+# alembic revision --autogenerate -m "Initial User table"
+# alembic revision --autogenerate -m "Initial StorageFile table"

@@ -21,13 +21,31 @@ services:
     networks:
       - fdb_network
 
+  core:
+    image: fdb-core
+    container_name: fbd_core
+    build: ./core
+    volumes:
+      - ./core:/srv/app
+    ports:
+      - "5001:5001"
+    command: "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 5001"
+    depends_on:
+      - database
+    healthcheck:
+      test: [ "CMD-SHELL", "curl localhost:5001/docs" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - fdb_network
+
   auth_service:
     image: fdb-auth_service
     container_name: fbd_auth_service
     build: ./auth_service
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/main
-      - SECRET_KEY=secret_key
     volumes:
       - ./auth_service:/srv/app
     ports:
@@ -37,6 +55,27 @@ services:
       - database
     healthcheck:
       test: [ "CMD-SHELL", "curl localhost:8000/docs" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - fdb_network
+
+  storage_service:
+    image: fdb-storage_service
+    container_name: fbd_storage_service
+    build: ./storage_service
+    volumes:
+      - ./storage_service:/srv/app
+    ports:
+      - "8001:8001"
+    command: "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"
+    depends_on:
+      - database
+    healthcheck:
+      test: [ "CMD-SHELL", "curl localhost:8001/docs" ]
       start_period: 10s
       interval: 5s
       timeout: 2s
