@@ -1,0 +1,4 @@
+fastapi[all]
+fastapi-users[sqlalchemy]
+sqlalchemy
+asyncpg
