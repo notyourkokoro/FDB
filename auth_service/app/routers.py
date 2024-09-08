@@ -4,7 +4,7 @@ from app.config import auth_backend
 from app.manager import fastapi_users
 from app.schemas import UserRead, UserCreate
 
-router = APIRouter(tags=["Auth"], prefix="/auth")
+router = APIRouter(tags=["auth"], prefix="/auth")
 
 router.include_router(
     fastapi_users.get_auth_router(auth_backend),

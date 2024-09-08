@@ -2,7 +2,7 @@ from typing import Optional, Any
 import uuid
 from fastapi import Depends, Request, Response
 
-from fastapi_users import BaseUserManager, IntegerIDMixin, FastAPIUsers
+from fastapi_users import BaseUserManager, UUIDIDMixin, FastAPIUsers
 from fastapi_users.db import SQLAlchemyUserDatabase
 
 from app.config import auth_backend
@@ -11,9 +11,9 @@ from app.utils import get_user_db
 from app.settings import settings
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = settings.secret_key
-    verify_token_secret = settings.secret_key
+    verification_token_secret = settings.secret_key
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"Пользователь с ИД {user.id} был успешно зарегистрирован.")
@@ -68,4 +68,4 @@ fastapi_users = FastAPIUsers[User, uuid.UUID](
     [auth_backend],
 )
 
-current_user = fastapi_users.current_user()
+current_user = fastapi_users.current_user(active=True)
