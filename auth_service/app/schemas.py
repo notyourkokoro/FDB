@@ -1,5 +1,6 @@
 import uuid
 
+from pydantic import BaseModel
 from fastapi_users.schemas import BaseUser, BaseUserCreate, BaseUserUpdate
 
 
@@ -13,3 +14,7 @@ class UserCreate(BaseUserCreate):
 
 class UserUpdate(BaseUserUpdate):
     pass
+
+
+class JWTToken(BaseModel):
+    token: str
