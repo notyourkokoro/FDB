@@ -18,7 +18,11 @@ router.include_router(
 @router.post("/jwt/decode")
 async def jwt_decode(token: JWTToken):
     try:
-        return jwt.decode(token.token, options={"verify_signature": False}).get("sub")
+        return {
+            "uuid": jwt.decode(token.token, options={"verify_signature": False}).get(
+                "sub"
+            )
+        }
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

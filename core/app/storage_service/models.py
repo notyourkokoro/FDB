@@ -1,3 +1,4 @@
+from uuid import UUID
 from enum import Enum
 
 from datetime import datetime
@@ -62,7 +63,7 @@ class UserFile(Base):
     __tablename__ = "users_files"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     file_id: Mapped[int] = mapped_column(
         ForeignKey("storage_files.id", ondelete="CASCADE")
     )

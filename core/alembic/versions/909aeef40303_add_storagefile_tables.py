@@ -1,8 +1,8 @@
-"""Initial StorageFile table
+"""Add StorageFile tables
 
-Revision ID: 55f96d831b74
+Revision ID: 909aeef40303
 Revises: 230909239e33
-Create Date: 2024-09-05 14:11:53.454984
+Create Date: 2024-09-08 14:46:54.746812
 
 """
 
@@ -16,7 +16,7 @@ from app.storage_service.models import FileTypeEnum
 
 
 # revision identifiers, used by Alembic.
-revision: str = "55f96d831b74"
+revision: str = "909aeef40303"
 down_revision: Union[str, None] = "230909239e33"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
