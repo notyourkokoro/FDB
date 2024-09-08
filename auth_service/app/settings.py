@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     echo: bool = False
 
     secret_key: str
+    secret_algorithm: str = "HS256"
 
     @property
     def db_url(self) -> str:
