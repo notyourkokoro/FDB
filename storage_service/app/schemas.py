@@ -17,3 +17,8 @@ class StorageFileRead(StorageFileBase):
     type_id: int
     upload_date: datetime
     update_date: datetime
+
+
+class AddUserFile(BaseModel):
+    to_user_id: str
+    file_id: int

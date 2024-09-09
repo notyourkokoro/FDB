@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_db
 from app.storage import storage
-from app.schemas import StorageFileRead
-from app.repository import create_user_file, select_user_files
+from app.schemas import AddUserFile, StorageFileRead
+from app.repository import create_user_file, select_user_files, add_file_to_user
 from app.dependencies import get_current_user_uuid
 from app.exceptions import FileFormatException, FileNameException
 
@@ -44,9 +44,23 @@ async def upload_file(
     return created_file
 
 
-@router.get("/all", response_model=list[StorageFileRead])
+@router.get("/list", response_model=list[StorageFileRead])
 async def get_user_files(
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> Sequence[StorageFileRead]:
     return await select_user_files(user_id=user_id, session=session)
+
+
+@router.post("/add_user", status_code=status.HTTP_201_CREATED)
+async def add_filelink_to_user(
+    data_to_add: AddUserFile,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+):
+    await add_file_to_user(
+        user_id=user_id,
+        to_user_id=data_to_add.to_user_id,
+        file_id=data_to_add.file_id,
+        session=session,
+    )
