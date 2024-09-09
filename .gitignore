@@ -7,3 +7,6 @@ __pycache__/
 poetry.lock
 data/
 *.ipynb
+*.xlsx
+*.xls
+*.csv

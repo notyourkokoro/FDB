@@ -1,8 +1,14 @@
+import os
+
 from pydantic_settings import BaseSettings
 
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
+
+
+BASE_DIR = Path(__file__).parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -13,7 +19,10 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     echo: bool = False
 
-    secret_key: str
+    storage_dir: str
+
+    auth_host: str
+    auth_port: str
 
     @property
     def db_url(self) -> str:
@@ -23,6 +32,17 @@ class Settings(BaseSettings):
             host=self.postgres_host,
             port=self.postgres_port,
             name=self.postgres_name,
+        )
+
+    @property
+    def storage_path(self) -> str:
+        return os.path.join(BASE_DIR, self.storage_dir)
+
+    @property
+    def auth_url(self) -> str:
+        return "http://{host}:{port}".format(
+            host=self.auth_host,
+            port=self.auth_port,
         )
 
 
