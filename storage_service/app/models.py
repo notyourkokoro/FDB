@@ -39,7 +39,7 @@ class StorageFile(Base):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    filename: Mapped[str] = mapped_column(unique=True)
+    filename: Mapped[str]
     path: Mapped[str]
     size: Mapped[int]
     type_id: Mapped[int] = mapped_column(ForeignKey("file_types.id"))
