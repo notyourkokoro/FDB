@@ -1,8 +1,8 @@
-"""Add StorageFile tables
+"""Add FileStorage tables
 
-Revision ID: 909aeef40303
+Revision ID: 6d8ecffec2cc
 Revises: 230909239e33
-Create Date: 2024-09-08 14:46:54.746812
+Create Date: 2024-09-09 13:38:28.707939
 
 """
 
@@ -16,7 +16,7 @@ from app.storage_service.models import FileTypeEnum
 
 
 # revision identifiers, used by Alembic.
-revision: str = "909aeef40303"
+revision: str = "6d8ecffec2cc"
 down_revision: Union[str, None] = "230909239e33"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -62,7 +62,6 @@ def upgrade() -> None:
             ["file_types.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("filename"),
     )
     op.create_table(
         "users_files",

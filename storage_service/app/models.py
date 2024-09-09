@@ -38,7 +38,7 @@ class StorageFile(Base):
     __tablename__ = "storage_files"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
-    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    creator_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     filename: Mapped[str]
     path: Mapped[str]
     size: Mapped[int]
