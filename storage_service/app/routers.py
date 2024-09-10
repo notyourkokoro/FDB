@@ -2,21 +2,31 @@ import os
 from typing import Sequence
 
 from fastapi import APIRouter, UploadFile, File, status, Depends
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_db
 from app.storage import storage
-from app.schemas import AddUserFile, StorageFileRead
-from app.repository import create_user_file, select_user_files, add_file_to_user
+from app.schemas import AddUserFile, StorageFileRead, StorageFileList
+from app.repository import (
+    create_user_file,
+    select_user_files,
+    add_file_to_user,
+    select_file,
+    select_user,
+)
 from app.dependencies import get_current_user_uuid
-from app.exceptions import FileFormatException, FileNameException
+from app.exceptions import (
+    FileFormatException,
+    FileNameException,
+    FilePermissionException,
+)
+from app.permissions import StorageFilePermission
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
 
-@router.post(
-    "/upload", status_code=status.HTTP_201_CREATED, response_model=StorageFileRead
-)
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file(
     file_obj: UploadFile = File(...),
     user_id: str = Depends(get_current_user_uuid),
@@ -44,14 +54,6 @@ async def upload_file(
     return created_file
 
 
-@router.get("/list", response_model=list[StorageFileRead])
-async def get_user_files(
-    user_id: str = Depends(get_current_user_uuid),
-    session: AsyncSession = Depends(async_db.get_async_session),
-) -> Sequence[StorageFileRead]:
-    return await select_user_files(user_id=user_id, session=session)
-
-
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 async def add_filelink_to_user(
     data_to_add: AddUserFile,
@@ -64,3 +66,28 @@ async def add_filelink_to_user(
         file_id=data_to_add.file_id,
         session=session,
     )
+
+
+@router.get("/list")
+async def get_user_files(
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> Sequence[StorageFileList]:
+    return await select_user_files(user_id=user_id, session=session)
+
+
+@router.get("/{file_id}")
+async def get_file(
+    file_id: int,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> StorageFileRead:
+    storage_file = await select_file(file_id=file_id, session=session)
+    user = await select_user(user_id=user_id, session=session)
+
+    if (
+        StorageFilePermission.check_user_access(user=user, storage_file=storage_file)
+        is False
+    ):
+        raise FilePermissionException
+    return storage_file

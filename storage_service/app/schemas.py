@@ -19,6 +19,10 @@ class StorageFileRead(StorageFileBase):
     update_date: datetime
 
 
+class StorageFileList(StorageFileBase):
+    creator_id: UUID
+
+
 class AddUserFile(BaseModel):
     to_user_id: str
     file_id: int
