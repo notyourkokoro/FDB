@@ -91,3 +91,13 @@ async def get_file(
     ):
         raise FilePermissionException
     return storage_file
+
+
+@router.get("/download/{file_id}")
+async def download_file(
+    file_id: int,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> FileResponse:
+    storage_file = await get_file(file_id=file_id, user_id=user_id, session=session)
+    return FileResponse(storage_file.path, filename=storage_file.filename)
