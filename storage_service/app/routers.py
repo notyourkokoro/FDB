@@ -9,6 +9,7 @@ from app.storage import storage
 from app.schemas import AddUserFile, StorageFileRead, StorageFileList, StorageFilePatch
 from app.repository import (
     create_user_file,
+    remove_file,
     select_user_files,
     add_file_to_user,
     update_file,
@@ -26,22 +27,21 @@ router = APIRouter(prefix="/storage", tags=["storage"])
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file(
-    file_obj: UploadFile = File(...),
+    upload_file: UploadFile = File(...),
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> StorageFileRead:
-    filepath = storage.get_filepath(filename=file_obj.filename, user_id=user_id)
+    filepath = storage.get_filepath(filename=upload_file.filename, user_id=user_id)
 
-    if not file_obj.filename.endswith(("xlsx", "xls", "csv")):
+    if not upload_file.filename.endswith(("xlsx", "xls", "csv")):
         raise FileFormatException
 
-    with open(filepath, "wb") as output_file:
-        output_file.write(file_obj.file.read())
+    storage.create_file(filepath, upload_file.file)
 
     created_file = await create_user_file(
-        filename=file_obj.filename,
+        filename=upload_file.filename,
         path=filepath,
-        size=file_obj.size,
+        size=upload_file.size,
         user_id=user_id,
         session=session,
     )
@@ -124,3 +124,20 @@ async def patch_file(
     )
 
     return storage_file
+
+
+@router.delete("/delete/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_file(
+    file_id: int,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+):
+    data = await StorageFilePermission.check_user_access_with_data(
+        user_id, file_id, session
+    )
+    if data["access"] is False:
+        raise FilePermissionException
+    storage_file = data["storage_file"]
+
+    storage.delete_file(storage_file.path)
+    await remove_file(storage_file=storage_file, session=session)

@@ -1,7 +1,7 @@
 import os
 from app.settings import settings
 from app.models import FileTypeEnum
-from app.exceptions import FileNameException
+from app.exceptions import FileNameException, FilepathNotFoundException
 
 
 class StogareController:
@@ -22,8 +22,17 @@ class StogareController:
         _, filetype = os.path.splitext(filename)
         return FileTypeEnum[filetype[1:]].value
 
+    def create_file(self, filepath, file_obj):
+        with open(filepath, "wb") as output_file:
+            output_file.write(file_obj.read())
+
     def rename_file(self, current_path: str, new_path: str):
         os.rename(current_path, new_path)
+
+    def delete_file(self, filepath: str):
+        if not os.path.exists(filepath):
+            raise FilepathNotFoundException
+        os.remove(filepath)
 
 
 storage = StogareController()

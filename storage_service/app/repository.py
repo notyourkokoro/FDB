@@ -100,3 +100,8 @@ async def update_file(
     await session.refresh(storage_file)
 
     return storage_file
+
+
+async def remove_file(storage_file: StorageFile, session: AsyncSession):
+    await session.delete(storage_file)
+    await session.commit()

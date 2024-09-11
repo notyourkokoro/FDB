@@ -22,6 +22,11 @@ FileNotFoundException = HTTPException(
     detail="Файл c таким ИД не найден!",
 )
 
+FilepathNotFoundException = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Файл по данному пути не найден!",
+)
+
 
 UserNotFoundException = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
