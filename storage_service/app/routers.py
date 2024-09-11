@@ -1,4 +1,3 @@
-import os
 from typing import Sequence
 
 from fastapi import APIRouter, UploadFile, File, status, Depends
@@ -7,21 +6,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_db
 from app.storage import storage
-from app.schemas import AddUserFile, StorageFileRead, StorageFileList
+from app.schemas import AddUserFile, StorageFileRead, StorageFileList, StorageFilePatch
 from app.repository import (
     create_user_file,
     select_user_files,
     add_file_to_user,
-    select_file,
-    select_user,
+    update_file,
 )
 from app.dependencies import get_current_user_uuid
 from app.exceptions import (
     FileFormatException,
-    FileNameException,
     FilePermissionException,
 )
 from app.permissions import StorageFilePermission
+from app.models import FileTypeEnum
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -36,9 +34,6 @@ async def upload_file(
 
     if not file_obj.filename.endswith(("xlsx", "xls", "csv")):
         raise FileFormatException
-
-    if os.path.exists(filepath):
-        raise FileNameException
 
     with open(filepath, "wb") as output_file:
         output_file.write(file_obj.file.read())
@@ -82,15 +77,12 @@ async def get_file(
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> StorageFileRead:
-    storage_file = await select_file(file_id=file_id, session=session)
-    user = await select_user(user_id=user_id, session=session)
-
-    if (
-        StorageFilePermission.check_user_access(user=user, storage_file=storage_file)
-        is False
-    ):
+    data = await StorageFilePermission.check_user_access_with_data(
+        user_id, file_id, session
+    )
+    if data["access"] is False:
         raise FilePermissionException
-    return storage_file
+    return data["storage_file"]
 
 
 @router.get("/download/{file_id}")
@@ -101,3 +93,34 @@ async def download_file(
 ) -> FileResponse:
     storage_file = await get_file(file_id=file_id, user_id=user_id, session=session)
     return FileResponse(storage_file.path, filename=storage_file.filename)
+
+
+@router.patch("/rename/{file_id}")
+async def patch_file(
+    file_id: int,
+    data_to_patch: StorageFilePatch,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> StorageFileRead:
+    data = await StorageFilePermission.check_user_access_with_data(
+        user_id, file_id, session
+    )
+    if data["access"] is False:
+        raise FilePermissionException
+
+    storage_file = data["storage_file"]
+    filetype = FileTypeEnum(storage_file.type_id).name
+    filepath = storage.get_filepath(
+        filename="{name}.{type}".format(name=data_to_patch.filename, type=filetype),
+        user_id=user_id,
+    )
+
+    storage.rename_file(current_path=storage_file.path, new_path=filepath)
+
+    await update_file(
+        storage_file=storage_file,
+        data_to_update={"filename": data_to_patch.filename, "path": filepath},
+        session=session,
+    )
+
+    return storage_file

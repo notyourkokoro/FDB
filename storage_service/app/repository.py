@@ -1,5 +1,5 @@
 from typing import Sequence
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import DBAPIError
@@ -26,7 +26,7 @@ async def select_user(user_id: str, session: AsyncSession) -> User:
     return user
 
 
-async def select_file(file_id: str, session: AsyncSession) -> StorageFile:
+async def select_file(file_id: int, session: AsyncSession) -> StorageFile:
     stmt = (
         select(StorageFile)
         .options(selectinload(StorageFile.users))
@@ -69,7 +69,7 @@ async def select_user_files(
 
 
 async def add_file_to_user(
-    user_id: str, to_user_id: str, file_id: str, session: AsyncSession
+    user_id: str, to_user_id: str, file_id: int, session: AsyncSession
 ):
     storage_file = await select_file(file_id=file_id, session=session)
 
@@ -83,3 +83,20 @@ async def add_file_to_user(
 
     user.files.append(storage_file)
     await session.commit()
+
+
+async def update_file(
+    storage_file: StorageFile, data_to_update: dict, session: AsyncSession
+) -> StorageFile:
+
+    stmt = (
+        update(StorageFile)
+        .where(StorageFile.id == storage_file.id)
+        .values(**data_to_update)
+    )
+
+    await session.execute(stmt)
+    await session.commit()
+    await session.refresh(storage_file)
+
+    return storage_file

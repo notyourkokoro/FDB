@@ -23,6 +23,10 @@ class StorageFileList(StorageFileBase):
     creator_id: UUID
 
 
+class StorageFilePatch(BaseModel):
+    filename: str
+
+
 class AddUserFile(BaseModel):
     to_user_id: str
     file_id: int
