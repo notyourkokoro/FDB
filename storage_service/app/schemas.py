@@ -28,5 +28,10 @@ class StorageFilePatch(BaseModel):
 
 
 class AddUserFile(BaseModel):
-    to_user_id: str
+    to_user_id: UUID
+    file_id: int
+
+
+class AddUsersFile(BaseModel):
+    to_user_ids: list[UUID]
     file_id: int

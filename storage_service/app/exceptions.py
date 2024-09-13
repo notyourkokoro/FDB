@@ -34,12 +34,21 @@ UserNotFoundException = HTTPException(
 )
 
 
-FileExistsException = HTTPException(
-    status_code=status.HTTP_400_BAD_REQUEST,
-    detail="К данному файлу у пользователя уже есть доступ!",
-)
+class UsersNotFoundException(HTTPException):
+    def __init__(self, user_ids: list[str]):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователи с такими ИД не найдены: {ids}!".format(
+                ids=", ".join(map(str, user_ids))
+            ),
+        )
 
-UserIDException = HTTPException(
-    status_code=status.HTTP_400_BAD_REQUEST,
-    detail="Неверный формат ИД пользователя!",
-)
+
+class FileExistsException(HTTPException):
+    def __init__(self, user_ids: list[str]):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="К данному файлу у пользователей: {ids} - уже есть доступ!".format(
+                ids=", ".join(map(str, user_ids))
+            ),
+        )

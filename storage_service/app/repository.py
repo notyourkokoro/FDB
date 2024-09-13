@@ -2,7 +2,6 @@ from typing import Sequence
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import DBAPIError
 
 from app.models import StorageFile, User
 from app.storage import storage
@@ -11,19 +10,29 @@ from app.exceptions import (
     FileNotFoundException,
     UserNotFoundException,
     FileExistsException,
-    UserIDException,
+    UsersNotFoundException,
 )
 
 
 async def select_user(user_id: str, session: AsyncSession) -> User:
     stmt = select(User).options(selectinload(User.files)).where(User.id == user_id)
-    try:
-        user = await session.scalar(stmt)
-    except DBAPIError:
-        raise UserIDException
+    user = await session.scalar(stmt)
     if user is None:
         raise UserNotFoundException
     return user
+
+
+async def select_users(session: AsyncSession, user_ids: list[str]) -> list[User]:
+    stmt = select(User).where(User.id.in_(user_ids))
+    users = list(await session.scalars(stmt))
+
+    if len(user_ids) != len(users):
+        current_user_ids = [user.id for user in users]
+        raise UsersNotFoundException(
+            user_ids=list(filter(lambda x: x not in current_user_ids, user_ids))
+        )
+
+    return users
 
 
 async def select_file(file_id: int, session: AsyncSession) -> StorageFile:
@@ -79,9 +88,31 @@ async def add_file_to_user(
     user = await select_user(user_id=to_user_id, session=session)
 
     if storage_file in user.files:
-        raise FileExistsException
+        raise FileExistsException([to_user_id])
 
     user.files.append(storage_file)
+    await session.commit()
+
+
+async def add_file_to_users(
+    user_id: str, to_user_ids: list[str], file_id: int, session: AsyncSession
+):
+    storage_file = await select_file(file_id=file_id, session=session)
+
+    if user_id != str(storage_file.creator_id):
+        raise FilePermissionException
+
+    users = await select_users(session=session, user_ids=to_user_ids)
+
+    users_with_file = []
+    for user in users:
+        if user in storage_file.users:
+            users_with_file.append(user.id)
+
+    if len(users_with_file) != 0:
+        raise FileExistsException(users_with_file)
+
+    storage_file.users.extend(list(users))
     await session.commit()
 
 
