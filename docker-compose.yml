@@ -21,6 +21,27 @@ services:
     networks:
       - fdb_network
 
+  redis:
+    container_name: fdb_redis
+    image: redis:latest
+    hostname: redis
+    env_file:
+      - ./.env
+    ports:
+        - '${REDIS_OUT_PORT}:${REDIS_IN_PORT}'
+    volumes:
+      - ./data/redis:/data # Папка для хранения данных и бэкапов
+      - ./redis.conf:/usr/local/etc/redis/redis.conf # Файл конфигурации
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping | grep PONG" ]
+      start_period: 2s
+      interval: 1s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+    - fdb_network
+
   core:
     image: fdb-core
     container_name: fbd_core
@@ -74,6 +95,7 @@ services:
     command: "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001"
     depends_on:
       - database
+      - auth_service
     healthcheck:
       test: [ "CMD-SHELL", "curl localhost:8001/docs" ]
       start_period: 10s
@@ -82,7 +104,7 @@ services:
       retries: 15
     restart: unless-stopped
     networks:
-      - fdb_network
+      - fdb_network  - fdb_network
 
 networks:
     fdb_network:
