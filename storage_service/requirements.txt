@@ -19,13 +19,10 @@ certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
-    #   requests
 cffi==1.17.1
     # via
     #   argon2-cffi-bindings
     #   cryptography
-charset-normalizer==3.3.2
-    # via requests
 click==8.1.7
     # via
     #   typer
@@ -71,7 +68,6 @@ idna==3.8
     #   anyio
     #   email-validator
     #   httpx
-    #   requests
 itsdangerous==2.2.0
     # via fastapi
 jinja2==3.1.4
@@ -117,8 +113,6 @@ pyyaml==6.0.2
     # via
     #   fastapi
     #   uvicorn
-requests==2.32.3
-    # via -r storage_service/requirements.in
 rich==13.8.0
     # via typer
 shellingham==1.5.4
@@ -144,8 +138,6 @@ typing-extensions==4.12.2
     #   typer
 ujson==5.10.0
     # via fastapi
-urllib3==2.2.2
-    # via requests
 uvicorn==0.30.6
     # via
     #   fastapi
