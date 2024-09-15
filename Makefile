@@ -2,7 +2,7 @@ database_name  = main
 DOCKER_COMP    = docker compose -f docker-compose.yml
 EXEC	       = $(DOCKER_COMP) exec
 CORE		   = @$(EXEC) core uv
-DEFAULT_IMAGES = fdb-auth_service fdb-storage_service core
+DEFAULT_IMAGES = fdb-auth_service fdb-storage_service fdb-data_service core
 
 # ---------- Docker containers ----------
 up:
@@ -24,6 +24,3 @@ migrate:
 
 downgrade:
 	@$(CORE) run alembic downgrade -1
-
-# alembic revision --autogenerate -m "Initial User table"
-# alembic revision --autogenerate -m "Initial StorageFile table"

@@ -11,7 +11,7 @@ security = HTTPBearer()
 
 async def get_current_user_uuid(
     credentials: HTTPAuthorizationCredentials = Security(security),
-) -> str | None:
+) -> str:
     token = credentials.credentials
     async with httpx.AsyncClient() as client:
         response = await client.post(
