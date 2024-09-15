@@ -1,7 +1,10 @@
+import pandas as pd
+
 from fastapi import Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.requests import get_user_uuid
+from app.memory import memory
 
 
 security = HTTPBearer()
@@ -18,3 +21,17 @@ async def get_current_user_uuid(
 ) -> str:
     token = credentials.credentials
     return await get_user_uuid(user_token=token)
+
+
+async def get_user_columns(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+) -> list:
+    user_id = await get_current_user_uuid(credentials=credentials)
+    return await memory.get_columns(user_id=user_id)
+
+
+async def get_user_dataframe(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+) -> pd.DataFrame:
+    user_id = get_current_user_uuid(credentials=credentials)
+    return await memory.get_dataframe(user_id=user_id)

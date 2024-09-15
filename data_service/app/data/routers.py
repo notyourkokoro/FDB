@@ -2,7 +2,7 @@ import pandas as pd
 
 from fastapi import APIRouter, Depends
 
-from app.dependencies import get_current_user_token
+from app.dependencies import get_current_user_token, get_user_columns
 from app.memory import memory
 from app.requests import get_user_file, get_user_uuid
 
@@ -17,3 +17,8 @@ async def load_file(file_id: int, user_token: str = Depends(get_current_user_tok
     df = pd.read_excel(file_obj)
 
     await memory.set_dataframe(user_id=user_id, df=df)
+
+
+@router.get("/columns")
+async def get_columns(columns: list = Depends(get_user_columns)):
+    return columns

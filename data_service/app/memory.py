@@ -3,6 +3,7 @@ import pickle
 import redis.asyncio as redis
 
 from app.settings import settings
+from app.exceptions import DataNotFound
 
 
 class RedisConnection:
@@ -28,10 +29,20 @@ class RedisConnection:
                 )
 
     async def set_dataframe(self, user_id: str, df: pd.DataFrame):
-        await self.redis.set(user_id, pickle.dumps(df))
+        await self.redis.set(f"{user_id}_data", pickle.dumps(df))
+        await self.redis.set(f"{user_id}_columns", pickle.dumps(df.columns))
 
     async def get_dataframe(self, user_id: str) -> pd.DataFrame:
-        return pickle.loads(await self.redis.get(user_id))
+        data = await self.redis.get(f"{user_id}_data")
+        if data is None:
+            raise DataNotFound
+        return pickle.loads(data)
+
+    async def get_columns(self, user_id: str) -> list:
+        columns = await self.redis.get(f"{user_id}_columns")
+        if columns is None:
+            raise DataNotFound
+        return list(pickle.loads(columns))
 
 
 memory = RedisConnection()
