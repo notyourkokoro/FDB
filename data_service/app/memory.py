@@ -3,7 +3,7 @@ import pickle
 import redis.asyncio as redis
 
 from app.settings import settings
-from app.exceptions import DataNotFound
+from app.data.exceptions import DataNotFound
 
 
 class RedisConnection:
