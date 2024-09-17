@@ -30,8 +30,9 @@ async def get_user_columns(
     return await memory.get_columns(user_id=user_id)
 
 
-async def get_user_dataframe(
+async def get_user_data(
     credentials: HTTPAuthorizationCredentials = Security(security),
 ) -> pd.DataFrame:
-    user_id = get_current_user_uuid(credentials=credentials)
-    return await memory.get_dataframe(user_id=user_id)
+    user_id = await get_current_user_uuid(credentials=credentials)
+    df = await memory.get_dataframe(user_id=user_id)
+    return {"user_id": user_id, "data": df}
