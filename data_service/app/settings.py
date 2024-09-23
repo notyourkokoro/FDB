@@ -1,8 +1,11 @@
 from pydantic_settings import BaseSettings
 
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
+
+BASE_DIR = Path(__file__).parent.parent
 
 
 class Settings(BaseSettings):
@@ -14,6 +17,8 @@ class Settings(BaseSettings):
 
     redis_host: str
     redis_port: str
+
+    temp_dir: str = "temp"
 
     def get_url(self, host: str, port: str):
         return "http://{host}:{port}".format(

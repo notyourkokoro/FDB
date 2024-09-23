@@ -2,3 +2,4 @@ fastapi[all]
 pandas
 openpyxl
 redis
+xlrd
