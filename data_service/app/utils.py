@@ -20,9 +20,9 @@ class TempStorage:
         return os.path.join(cls.basedir, filename)
 
     @classmethod
-    def create_file(cls, df: pd.DataFrame) -> str:
+    def create_file(cls, df: pd.DataFrame, index=False) -> str:
         filename = cls._get_name()
-        df.to_excel(cls.get_path(filename), index=False)
+        df.to_excel(cls.get_path(filename), index=index)
         return filename
 
     @classmethod

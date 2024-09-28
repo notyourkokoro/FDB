@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.dependencies import get_user_data
-from app.statistic.schemas import DataForOutliers, DataWithGroups
+from app.statistic.schemas import DataForCorrelation, DataForOutliers, DataWithGroups
 from app.statistic.builders import (
     DataBuilder,
     DescriptiveStatisticsBuilder,
@@ -84,6 +84,36 @@ async def get_outliers_fast(
     df = df.assign(**result)
 
     filename = TempStorage.create_file(df)
+    filepath = TempStorage.get_path(filename)
+
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
+    )
+
+
+@router.post("/correlation")
+async def get_correlation(
+    params: DataForCorrelation,
+    data=Depends(get_user_data),
+) -> dict[str, dict[str, float]]:
+    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    return round(
+        df.corr(method=str.lower(params.method.name)), params.round_value
+    ).to_dict()
+
+
+@router.post("/correlation/fast")
+async def get_correlation_fast(
+    params: DataForCorrelation,
+    data=Depends(get_user_data),
+) -> FileResponse:
+    result = await get_correlation(params=params, data=data)
+
+    df = pd.DataFrame(result)
+    filename = TempStorage.create_file(df, index=True)
     filepath = TempStorage.get_path(filename)
 
     return FileResponse(

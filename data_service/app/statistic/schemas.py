@@ -9,6 +9,12 @@ class OutliersMethod(Enum):
     ISO_FOREST = 3
 
 
+class CorrelationMethod(Enum):
+    PEARSON = 0
+    KENDALL = 1
+    SPEARMAN = 2
+
+
 class DataBase(BaseModel):
     columns: list[str] = []
 
@@ -21,3 +27,8 @@ class DataWithGroups(DataBase):
 class DataForOutliers(DataBase):
     y_column: str | None = None
     method: OutliersMethod
+
+
+class DataForCorrelation(DataBase):
+    method: CorrelationMethod
+    round_value: int = 2
