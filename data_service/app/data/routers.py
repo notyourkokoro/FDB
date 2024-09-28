@@ -20,6 +20,7 @@ async def load_file(file_id: int, user_token: str = Depends(get_current_user_tok
     user_id = await get_user_uuid(user_token=user_token)
 
     df = pd.read_excel(file_obj)
+    df = df.rename(columns={col: col.strip() for col in df.columns})
 
     await memory.set_dataframe(user_id=user_id, df=df)
 
