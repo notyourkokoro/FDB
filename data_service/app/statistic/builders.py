@@ -1,11 +1,16 @@
 import pandas as pd
+import numpy as np
 
+from scipy import stats
+from sklearn.ensemble import IsolationForest
+
+from app.exceptions import ColumnsNotFoundException
 from app.statistic.exceptions import (
     BASE_PRINT,
     BadGroupParamsException,
     BadOperationException,
-    ColumnsNotFoundException,
     EmptyColumnException,
+    NanColumnsException,
 )
 
 
@@ -142,3 +147,110 @@ class DataBuilder:
                 datas[name] = data
 
         return datas
+
+
+class OutliersBuilder:
+    @classmethod
+    def _calculate_z_score(cls, df: pd.DataFrame) -> pd.DataFrame:
+        return stats.zscore(df, nan_policy="omit")
+
+    @classmethod
+    def _calculate_modified_z_score(cls, df: pd.DataFrame) -> pd.DataFrame:
+        median = df.median()
+        mad = (df - median).abs().median()
+
+        return 0.6745 * (df - median) / (mad + 1e-5)
+
+    @classmethod
+    def _calculate_iqr(cls, df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+        q1 = df.quantile(0.25)
+        q3 = df.quantile(0.75)
+        iqr = q3 - q1
+        lower_bound, upper_bound = q1 - (1.5 * iqr), q3 + (1.5 * iqr)
+        return lower_bound, upper_bound
+
+    @classmethod
+    def _calculate_iso_forest(
+        cls,
+        df: pd.DataFrame,
+        contamination: float = 0.1,
+        seed: int = 14,
+    ) -> list[int]:
+        model = IsolationForest(contamination=contamination, random_state=seed)
+        model.fit(df)
+        outliers = model.predict(df)
+        return outliers
+
+    @classmethod
+    def z_score(cls, df: pd.DataFrame, y_column: str | None = None, threshold: float = 3) -> pd.Series:
+        df_for_outliers = np.abs(cls._calculate_z_score(df))
+        if y_column is not None:
+            df_for_outliers = df_for_outliers[[y_column]]
+        return (df_for_outliers > threshold).any(axis=1).astype(int)
+
+    @classmethod
+    def modified_z_score(
+        cls, df: pd.DataFrame, y_column: str | None = None, threshold: float = 3.5
+    ) -> pd.Series:
+        df_for_outliers = cls._calculate_modified_z_score(df)
+        if y_column is not None:
+            df_for_outliers = df_for_outliers[[y_column]]
+        return (df_for_outliers > threshold).any(axis=1).astype(int)
+
+    @classmethod
+    def iqr(cls, df: pd.DataFrame, y_column: str | None = None) -> pd.Series:
+        if y_column is not None:
+            df = df[[y_column]]
+        lower_bound, upper_bound = cls._calculate_iqr(df)
+        return ((df < lower_bound) | (df > upper_bound)).any(axis=1).astype(int)
+
+    @classmethod
+    def iso_forest(cls, df: pd.DataFrame, y_column: str | None = None) -> list[int]:
+        if y_column is not None:
+            df = df[[y_column]]
+
+        columns_with_nan = df.columns[df.isna().any()].tolist()
+        if len(columns_with_nan) != 0:
+            raise NanColumnsException(columns_with_nan)
+        outliers = cls._calculate_iso_forest(df)
+        return [1 if outlier == -1 else 0 for outlier in outliers]
+
+    @classmethod
+    def build(
+        cls,
+        df: pd.DataFrame,
+        method_name: str,
+        y_column: str | None = None,
+    ) -> dict[str, list[int]]:
+        """
+        Класс для определения выбросов в данных при помощи
+        различных методов
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Данные, которые необходимо учитывать
+            при поиске выбросов
+        method_name : str
+            Имя метода, при помощи которого будут
+            определены выбросы
+        y_column : str | None, optional
+            Имя поля, в котором необходимо найти выбросы.
+            В случае, если поле не указано, поиск выбросов
+            производится во всем DataFrame
+
+        Returns
+        -------
+        dict[str, list[int]]
+            Словарь с именем колонки и данными о выбросах.
+            В имени колонки будет содердать не только имя
+            метода для определения выбросов, но и y_column,
+            если оно имеет значение отличное от None
+        """
+        method_name = method_name.lower()
+        func = getattr(cls, method_name)
+        outliers = func(df, y_column)
+        if isinstance(outliers, pd.Series):
+            outliers = outliers.to_list()
+        name = f"{method_name}_outliers{f'_{y_column}' if y_column is not None else ""}"
+        return {name: outliers}

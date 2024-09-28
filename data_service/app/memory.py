@@ -9,11 +9,11 @@ from app.data.exceptions import DataNotFound
 class RedisConnection:
     redis = None
 
-    def connect(self):
+    async def connect(self):
         if self.redis is None:
             self.redis = redis.Redis(host=settings.redis_host, port=settings.redis_port)
         try:
-            self.redis.ping()
+            await self.redis.ping()
         except Exception as error:
             print("Неудачная попытка подключиться к Redis: {error}".format(error=error))
 

@@ -2,16 +2,6 @@ from fastapi import status
 from fastapi.exceptions import HTTPException
 
 
-class ColumnsNotFoundException(HTTPException):
-    def __init__(self, columns: list[str]):
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Колонок с такими именами нет в ранее загруженных данных: {columns}!".format(
-                columns=", ".join(map(str, columns))
-            ),
-        )
-
-
 class BadOperationException(HTTPException):
     def __init__(self, operations: list[str], value_type: str = "данных"):
         super().__init__(
@@ -28,6 +18,16 @@ class EmptyColumnException(HTTPException):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="В одном из переданных столбцов нет данных: {column}".format(
                 column=column
+            ),
+        )
+
+
+class NanColumnsException(HTTPException):
+    def __init__(self, columns: list[str]):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Следующие колонки содердят пустые значения: {columns}".format(
+                columns=", ".join(columns)
             ),
         )
 

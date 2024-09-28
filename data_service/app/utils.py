@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 
 from app.settings import settings
-from app.exceptions import FilepathNotFoundException
+from app.exceptions import FilepathNotFoundException, ColumnsNotFoundException
 
 
 class TempStorage:
@@ -30,3 +30,15 @@ class TempStorage:
         if not os.path.exists(filepath):
             raise FilepathNotFoundException
         os.remove(filepath)
+
+
+class ValidateData:
+    @staticmethod
+    def check_columns(df: pd.DataFrame, columns: list[str] | None) -> pd.DataFrame:
+        if columns:
+            error_columns = set(columns) - set(df.columns)
+            if len(error_columns) == 0:
+                df = df[columns]
+            else:
+                raise ColumnsNotFoundException(columns=error_columns)
+        return df

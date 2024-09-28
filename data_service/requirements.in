@@ -3,3 +3,6 @@ pandas
 openpyxl
 redis
 xlrd
+scipy
+scikit-learn
+numpy

@@ -9,7 +9,7 @@ from app.memory import memory
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    memory.connect()
+    await memory.connect()
     yield
     await memory.disconnect()
 
