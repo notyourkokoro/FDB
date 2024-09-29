@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 
 from fastapi import status
 from fastapi.exceptions import HTTPException
@@ -12,6 +13,10 @@ class MirrorHTTPException(HTTPException):
 
 class ColumnsNotFoundException(HTTPException):
     def __init__(self, columns: list[str]):
+        if isinstance(columns[0], pd.errors.UndefinedVariableError):
+            error_column = columns[0].args[0].split(" ")[1]
+            columns = [error_column[1:-1]]
+
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Колонок с такими именами нет в загруженных данных: {columns}!".format(

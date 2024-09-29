@@ -1,6 +1,9 @@
 import pandas as pd
+import numpy as np
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import FileResponse
+
 from starlette.background import BackgroundTask
 
 from app.dependencies import (
@@ -10,11 +13,11 @@ from app.dependencies import (
 )
 from app.memory import memory
 from app.requests import get_user_file, get_user_uuid
-from app.data.exceptions import ColumnsNotFound
-from app.data.schemas import DataForRecovery
+from app.exceptions import ColumnsNotFoundException
+from app.data.schemas import DataForRecovery, DataForCalculate
 from app.data.builders import RecoveryDataBuilder
 from app.utils import TempStorage, ValidateData
-from fastapi.responses import FileResponse
+from app.data.exceptions import ColumnsExistsException, EvalException
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -47,7 +50,7 @@ async def rename_columns(
             not_found_columns.append(column)
 
     if len(not_found_columns) != 0:
-        raise ColumnsNotFound(not_found_columns)
+        raise ColumnsNotFoundException(not_found_columns)
 
     df.rename(columns=columns, inplace=True)
     await memory.set_dataframe(user_id=user_id, df=df)
@@ -83,3 +86,29 @@ async def recovery_data_fast(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
     )
+
+
+@router.post("/calculate")
+async def calculate(
+    params: DataForCalculate, data: dict = Depends(get_user_data)
+) -> dict[str, list]:
+    df = data["data"]
+
+    if params.column_name in df.columns and params.rewrite is False:
+        raise ColumnsExistsException([params.column_name])
+
+    try:
+        result = df.eval(params.expr)
+    except pd.errors.UndefinedVariableError as error:
+        raise ColumnsNotFoundException([error])
+    except SyntaxError:
+        raise EvalException
+
+    if params.convert_bool is True and isinstance(result.dtype, np.dtypes.BoolDType):
+        result = result.astype(int)
+
+    if params.update_df:
+        df[params.column_name] = result
+        await memory.set_dataframe(user_id=data["user_id"], df=df)
+
+    return {params.column_name: result.to_list()}
