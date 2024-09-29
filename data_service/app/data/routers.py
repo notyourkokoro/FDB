@@ -1,6 +1,7 @@
 import pandas as pd
 
 from fastapi import APIRouter, Depends
+from starlette.background import BackgroundTask
 
 from app.dependencies import (
     get_current_user_token,
@@ -10,6 +11,10 @@ from app.dependencies import (
 from app.memory import memory
 from app.requests import get_user_file, get_user_uuid
 from app.data.exceptions import ColumnsNotFound
+from app.data.schemas import DataForRecovery
+from app.data.builders import RecoveryDataBuilder
+from app.utils import TempStorage, ValidateData
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -48,3 +53,33 @@ async def rename_columns(
     await memory.set_dataframe(user_id=user_id, df=df)
 
     return df.columns
+
+
+@router.post("/recovery")
+async def recovery_data(
+    params: DataForRecovery, data: dict = Depends(get_user_data)
+) -> dict:
+    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    recovery_df = RecoveryDataBuilder.recovery(
+        df=df,
+        method_name=str.lower(params.method.name),
+        n_neighbors=params.n_neighbors,
+    )
+    return recovery_df.to_dict()
+
+
+@router.post("/recovery/fast")
+async def recovery_data_fast(
+    params: DataForRecovery, data: dict = Depends(get_user_data)
+) -> FileResponse:
+    result = await recovery_data(params=params, data=data)
+
+    filename = TempStorage.create_file(pd.DataFrame(result))
+    filepath = TempStorage.get_path(filename)
+
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
+    )

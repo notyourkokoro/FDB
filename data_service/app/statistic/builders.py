@@ -247,7 +247,6 @@ class OutliersBuilder:
             метода для определения выбросов, но и y_column,
             если оно имеет значение отличное от None
         """
-        method_name = method_name.lower()
         func = getattr(cls, method_name)
         outliers = func(df, y_column)
         if isinstance(outliers, pd.Series):

@@ -1,5 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel
+
+from app.schemas import RequestDataBase
 
 
 class OutliersMethod(Enum):
@@ -15,20 +16,16 @@ class CorrelationMethod(Enum):
     SPEARMAN = 2
 
 
-class DataBase(BaseModel):
-    columns: list[str] = []
-
-
-class DataWithGroups(DataBase):
+class DataWithGroups(RequestDataBase):
     groups: list[dict[str, str | int]]
     include_nan: bool = True
 
 
-class DataForOutliers(DataBase):
+class DataForOutliers(RequestDataBase):
     y_column: str | None = None
     method: OutliersMethod
 
 
-class DataForCorrelation(DataBase):
+class DataForCorrelation(RequestDataBase):
     method: CorrelationMethod
     round_value: int = 2
