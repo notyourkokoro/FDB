@@ -4,8 +4,6 @@ import numpy as np
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
-from starlette.background import BackgroundTask
-
 from app.dependencies import (
     get_current_user_token,
     get_user_columns,
@@ -18,8 +16,17 @@ from app.data.schemas import DataForRecovery, DataForCalculate
 from app.data.builders import RecoveryDataBuilder
 from app.utils import TempStorage, ValidateData
 from app.data.exceptions import ColumnsExistsException, EvalException
+from app.schemas import DataFormat
 
 router = APIRouter(prefix="/data", tags=["data"])
+
+
+@router.get("/save")
+async def save_df(
+    data: dict = Depends(get_user_data),
+    save_format: DataFormat = DataFormat.XLSX,
+) -> FileResponse:
+    return TempStorage.return_file(df=data["data"], save_format=save_format)
 
 
 @router.get("/load/{file_id}")
@@ -73,19 +80,12 @@ async def recovery_data(
 
 @router.post("/recovery/fast")
 async def recovery_data_fast(
-    params: DataForRecovery, data: dict = Depends(get_user_data)
+    params: DataForRecovery,
+    save_format: DataFormat = DataFormat.XLSX,
+    data: dict = Depends(get_user_data),
 ) -> FileResponse:
     result = await recovery_data(params=params, data=data)
-
-    filename = TempStorage.create_file(pd.DataFrame(result))
-    filepath = TempStorage.get_path(filename)
-
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
-    )
+    return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
 
 
 @router.post("/calculate")

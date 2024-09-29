@@ -3,8 +3,6 @@ import pandas as pd
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
-from starlette.background import BackgroundTask
-
 from app.dependencies import get_user_data
 from app.statistic.schemas import DataForCorrelation, DataForOutliers, DataWithGroups
 from app.statistic.builders import (
@@ -14,6 +12,7 @@ from app.statistic.builders import (
 )
 from app.utils import ValidateData, TempStorage
 from app.exceptions import ColumnsNotFoundException
+from app.schemas import DataFormat
 
 
 router = APIRouter(prefix="/statistic", tags=["statistic"])
@@ -35,19 +34,11 @@ async def get_descriptive_statistics(
 @router.post("/descriptive/fast")
 async def get_fast_descriptive_statistics(
     params: DataWithGroups,
+    save_format: DataFormat = DataFormat.XLSX,
     data=Depends(get_user_data),
 ) -> FileResponse:
-
     result = await get_descriptive_statistics(params=params, data=data)
-    filename = TempStorage.create_file(pd.DataFrame(result))
-    filepath = TempStorage.get_path(filename)
-
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
-    )
+    return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
 
 
 @router.post("/outliers")
@@ -75,6 +66,7 @@ async def get_outliers(
 @router.post("/outliers/fast")
 async def get_outliers_fast(
     params: DataForOutliers,
+    save_format: DataFormat = DataFormat.XLSX,
     data=Depends(get_user_data),
 ) -> FileResponse:
     result = await get_outliers(params=params, data=data)
@@ -83,15 +75,7 @@ async def get_outliers_fast(
         df = df[params.columns]
     df = df.assign(**result)
 
-    filename = TempStorage.create_file(df)
-    filepath = TempStorage.get_path(filename)
-
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
-    )
+    return TempStorage.return_file(df=df, save_format=save_format)
 
 
 @router.post("/correlation")
@@ -108,17 +92,10 @@ async def get_correlation(
 @router.post("/correlation/fast")
 async def get_correlation_fast(
     params: DataForCorrelation,
+    save_format: DataFormat = DataFormat.XLSX,
     data=Depends(get_user_data),
 ) -> FileResponse:
     result = await get_correlation(params=params, data=data)
-
-    df = pd.DataFrame(result)
-    filename = TempStorage.create_file(df, index=True)
-    filepath = TempStorage.get_path(filename)
-
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        background=BackgroundTask(TempStorage.delete_file, filepath=filepath),
+    return TempStorage.return_file(
+        df=pd.DataFrame(result), save_format=save_format, index=True
     )
