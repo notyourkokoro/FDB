@@ -101,7 +101,9 @@ async def calculate(
         result = df.eval(params.expr)
     except pd.errors.UndefinedVariableError as error:
         raise ColumnsNotFoundException([error])
-    except SyntaxError:
+    except (ValueError, SyntaxError):
+        raise EvalException
+    if isinstance(result, pd.DataFrame):
         raise EvalException
 
     if params.convert_bool is True and isinstance(result.dtype, np.dtypes.BoolDType):
