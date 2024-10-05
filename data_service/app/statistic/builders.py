@@ -253,3 +253,39 @@ class OutliersBuilder:
             outliers = outliers.to_list()
         name = f"{method_name}_outliers{f'_{y_column}' if y_column is not None else ""}"
         return {name: outliers}
+
+
+class CorrBuilder:
+    headers = [
+        "Pair of columns",
+        "Valid N",
+        "Spearman R",
+        "p-value",
+    ]
+
+    @classmethod
+    def build(
+        cls, df: pd.DataFrame,
+        left_columns: list[str],
+        right_columns: list[str],
+        round_value: int = 2,
+        dropna: bool = True,
+    ) -> pd.DataFrame:
+        result = []
+        for left_col in left_columns:
+            for right_col in right_columns:
+                # удаляем нулевые значения, чтобы не было NaN
+                temp_df = df[[left_col, right_col]]
+                if dropna is True:
+                    temp_df.dropna(inplace=True)
+                n = len(temp_df)
+                # коэффициент и p-value ранговой корреляции Спирмена
+                rho, p = stats.spearmanr(temp_df[left_col], temp_df[right_col])
+                result.append([
+                    f"{left_col} / {right_col}",
+                    n,
+                    str(round(rho, round_value)),
+                    str(round(p, round_value)),
+                ])
+
+        return pd.DataFrame(result, columns=cls.headers)

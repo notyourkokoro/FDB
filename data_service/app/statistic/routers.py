@@ -6,12 +6,13 @@ from fastapi.responses import FileResponse
 from app.dependencies import get_user_data
 from app.statistic.schemas import DataForCorrelation, DataForOutliers, DataWithGroups
 from app.statistic.builders import (
+    CorrBuilder,
     DataBuilder,
     DescriptiveStatisticsBuilder,
     OutliersBuilder,
 )
 from app.utils import ValidateData, TempStorage
-from app.exceptions import ColumnsNotFoundException
+from app.exceptions import ColumnsDuplicateException, ColumnsNotFoundException
 from app.schemas import DataFormat
 
 
@@ -82,11 +83,23 @@ async def get_outliers_fast(
 async def get_correlation(
     params: DataForCorrelation,
     data=Depends(get_user_data),
-) -> dict[str, dict[str, float]]:
-    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
-    return round(
-        df.corr(method=str.lower(params.method.name)), params.round_value
-    ).to_dict()
+) -> dict:
+    if set(params.left_columns) & set(params.right_columns):
+        raise ColumnsDuplicateException(
+            columns=list(set(params.left_columns) & set(params.right_columns))
+        )
+
+    df = ValidateData.check_columns(
+        df=data["data"], columns=(params.left_columns + params.right_columns)
+    )
+    result = CorrBuilder.build(
+        df=df,
+        left_columns=params.left_columns,
+        right_columns=params.right_columns,
+        round_value=params.round_value,
+        dropna=params.dropna,
+    )
+    return result.to_dict()
 
 
 @router.post("/correlation/fast")
@@ -96,6 +109,4 @@ async def get_correlation_fast(
     data=Depends(get_user_data),
 ) -> FileResponse:
     result = await get_correlation(params=params, data=data)
-    return TempStorage.return_file(
-        df=pd.DataFrame(result), save_format=save_format, index=True
-    )
+    return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)

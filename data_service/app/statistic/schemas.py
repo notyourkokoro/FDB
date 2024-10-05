@@ -1,5 +1,5 @@
 from enum import Enum
-
+from pydantic import BaseModel
 from app.schemas import RequestDataBase
 
 
@@ -26,6 +26,9 @@ class DataForOutliers(RequestDataBase):
     method: OutliersMethod
 
 
-class DataForCorrelation(RequestDataBase):
+class DataForCorrelation(BaseModel):
+    left_columns: list[str]
+    right_columns: list[str]
     method: CorrelationMethod
     round_value: int = 2
+    dropna: bool = True
