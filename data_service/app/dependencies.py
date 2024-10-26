@@ -35,4 +35,5 @@ async def get_user_data(
 ) -> pd.DataFrame:
     user_id = await get_current_user_uuid(credentials=credentials)
     df = await memory.get_dataframe(user_id=user_id)
-    return {"user_id": user_id, "data": df}
+    file_id = await memory.get_filet_id(user_id=user_id)
+    return {"user_id": user_id, "data": df, "file_id": file_id}

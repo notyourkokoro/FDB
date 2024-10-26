@@ -37,12 +37,22 @@ async def load_file(file_id: int, user_token: str = Depends(get_current_user_tok
     df = pd.read_excel(file_obj)
     df = df.rename(columns={col: col.strip() for col in df.columns})
 
-    await memory.set_dataframe(user_id=user_id, df=df)
+    await memory.set_dataframe(user_id=user_id, df=df, file_id=file_id)
 
 
 @router.get("/columns")
 async def get_columns(columns: list = Depends(get_user_columns)) -> list[str]:
     return columns
+
+
+@router.get("/info")
+async def get_data_info(info: list = Depends(get_user_data)) -> dict:
+    return {
+        "file_id": info["file_id"],
+        "rows": len(info["data"]),
+        "columns_count": len(info["data"].columns),
+        "columns": info["data"].columns.to_list(),
+    }
 
 
 @router.patch("/columns/rename")
