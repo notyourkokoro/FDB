@@ -122,9 +122,14 @@ async def update_file(
 
     stmt = (
         update(StorageFile)
-        .where(StorageFile.id == storage_file.id)
+        .where(
+            (StorageFile.creator_id == storage_file.creator_id)
+            & (StorageFile.filename == storage_file.filename)
+        )
         .values(**data_to_update)
     )
+
+    print(stmt)
 
     await session.execute(stmt)
     await session.commit()

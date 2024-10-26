@@ -17,10 +17,12 @@ class StorageFileRead(StorageFileBase):
     type_id: int
     upload_date: datetime
     update_date: datetime
+    version: int
 
 
 class StorageFileList(StorageFileBase):
     creator_id: UUID
+    version: int
 
 
 class StorageFilePatch(BaseModel):

@@ -7,8 +7,8 @@ from app.exceptions import FileNameException, FilepathNotFoundException
 class StogareController:
     basedir = settings.storage_dir
 
-    def get_user_dir(self, user_id: str) -> str:
-        dir_path = os.path.join(self.basedir, str(user_id))
+    def get_user_dir(self, user_id: str, version: int | str = 1) -> str:
+        dir_path = os.path.join(self.basedir, str(user_id), str(version))
         os.makedirs(dir_path, exist_ok=True)
         return dir_path
 
