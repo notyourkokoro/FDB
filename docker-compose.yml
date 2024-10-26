@@ -1,7 +1,7 @@
 services:
   database:
     container_name: fdb_database
-    image: postgres:latest
+    image: postgres:16.4
     hostname: database
     environment:
       POSTGRES_USER: postgres
