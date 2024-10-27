@@ -12,6 +12,7 @@ from app.schemas import (
     StorageFileList,
     StorageFilePatch,
     AddUsersFile,
+    StorageFileReadFull,
 )
 from app.repository import (
     create_user_file,
@@ -25,6 +26,7 @@ from app.dependencies import get_current_user_uuid
 from app.exceptions import (
     FileFormatException,
     FilePermissionException,
+    BasedOnException,
 )
 from app.permissions import StorageFilePermission
 from app.models import FileTypeEnum
@@ -34,21 +36,21 @@ router = APIRouter(prefix="/storage", tags=["storage"])
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file(
-    upload_file: UploadFile = File(...),
+    upload_file_obj: UploadFile = File(...),
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> StorageFileRead:
-    filepath = storage.get_filepath(filename=upload_file.filename, user_id=user_id)
+    filepath = storage.get_filepath(filename=upload_file_obj.filename, user_id=user_id)
 
-    if not upload_file.filename.endswith(("xlsx", "xls", "csv")):
+    if not upload_file_obj.filename.endswith(("xlsx", "xls", "csv")):
         raise FileFormatException
 
-    storage.create_file(filepath, upload_file.file)
+    storage.create_file(filepath, upload_file_obj.file)
 
     created_file = await create_user_file(
-        filename=upload_file.filename,
+        filename=upload_file_obj.filename,
         path=filepath,
-        size=upload_file.size,
+        size=upload_file_obj.size,
         user_id=user_id,
         session=session,
     )
@@ -56,7 +58,45 @@ async def upload_file(
     return created_file
 
 
-@router.post("/add_user", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/based/{file_id}",
+    status_code=status.HTTP_201_CREATED,
+)
+async def based_on(
+    file_id: int,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> StorageFileReadFull:
+    data = await StorageFilePermission.check_user_access_with_data(
+        user_id, file_id, session
+    )
+    if data["access"] is False:
+        raise FilePermissionException
+
+    storage_file = data["storage_file"]
+
+    if str(storage_file.creator_id) == user_id:
+        raise BasedOnException
+
+    filepath = storage.get_filepath(filename=storage_file.filename, user_id=user_id)
+
+    storage.create_based_on(filepath_read=storage_file.path, filepath_output=filepath)
+    created_file = await create_user_file(
+        filename=storage_file.filename,
+        path=filepath,
+        size=storage_file.size,
+        user_id=user_id,
+        based_on_id=file_id,
+        session=session,
+    )
+
+    return created_file
+
+
+@router.post(
+    "/add_user",
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_filelink_to_user(
     data_to_add: AddUserFile,
     user_id: str = Depends(get_current_user_uuid),
@@ -97,7 +137,7 @@ async def get_file(
     file_id: int,
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
-) -> StorageFileRead:
+) -> StorageFileReadFull:
     data = await StorageFilePermission.check_user_access_with_data(
         user_id, file_id, session
     )
@@ -122,7 +162,7 @@ async def patch_file(
     data_to_patch: StorageFilePatch,
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
-) -> StorageFileRead:
+) -> StorageFileReadFull:
     data = await StorageFilePermission.check_user_access_with_data(
         user_id, file_id, session
     )

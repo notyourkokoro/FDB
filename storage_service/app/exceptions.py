@@ -52,3 +52,9 @@ class FileExistsException(HTTPException):
                 ids=", ".join(map(str, user_ids))
             ),
         )
+
+
+BasedOnException = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Нельзя создать файл на основе самого себя, будучи его создателем!",
+)

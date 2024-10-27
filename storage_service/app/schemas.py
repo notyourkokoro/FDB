@@ -20,9 +20,15 @@ class StorageFileRead(StorageFileBase):
     version: int
 
 
+class StorageFileReadFull(StorageFileRead):
+    version: int
+    based_on_id: int | None
+
+
 class StorageFileList(StorageFileBase):
     creator_id: UUID
     version: int
+    based_on_id: int | None
 
 
 class StorageFilePatch(BaseModel):

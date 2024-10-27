@@ -49,7 +49,13 @@ async def select_file(file_id: int, session: AsyncSession) -> StorageFile:
 
 
 async def create_user_file(
-    filename: str, path: str, size: int, user_id: str, session: AsyncSession
+    filename: str,
+    path: str,
+    size: int,
+    user_id: str,
+    session: AsyncSession,
+    version: int = 1,
+    based_on_id: int | None = None,
 ) -> StorageFile:
 
     created_file: StorageFile = StorageFile(
@@ -58,6 +64,8 @@ async def create_user_file(
         path=path,
         size=size,
         type_id=storage.get_filetype_id(filename),
+        version=version,
+        based_on_id=based_on_id,
     )
 
     session.add(created_file)

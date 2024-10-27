@@ -53,6 +53,9 @@ class StorageFile(Base):
         server_onupdate=func.now(),
     )
     version: Mapped[int] = mapped_column(default=1)
+    based_on_id: Mapped[int] = mapped_column(
+        ForeignKey("storage_files.id", ondelete="SET NULL"), nullable=True, default=None
+    )
 
     users: Mapped[list["User"]] = relationship(
         secondary="users_files", back_populates="files", passive_deletes=True
