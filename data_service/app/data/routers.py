@@ -10,7 +10,8 @@ from app.dependencies import (
     get_user_data,
 )
 from app.memory import memory
-from app.requests import get_user_file, get_user_uuid
+from app.requests import get_user_uuid
+from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
 from app.data.schemas import DataForRecovery, DataForCalculate
 from app.data.builders import RecoveryDataBuilder
@@ -31,7 +32,9 @@ async def save_df(
 
 @router.get("/load/{file_id}")
 async def load_file(file_id: int, user_token: str = Depends(get_current_user_token)):
-    file_obj = await get_user_file(user_token=user_token, file_id=file_id)
+    file_obj = await StorageServiceRequests.get_user_file(
+        user_token=user_token, file_id=file_id
+    )
     user_id = await get_user_uuid(user_token=user_token)
 
     df = pd.read_excel(file_obj)
