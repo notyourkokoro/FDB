@@ -1,0 +1,5 @@
+fastapi[all]
+pandas
+redis
+matplotlib
+seaborn

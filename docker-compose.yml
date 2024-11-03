@@ -130,6 +130,30 @@ services:
     networks:
       - fdb_network
 
+  visualization_service:
+    image: fdb-visualization_service
+    container_name: fbd_visualization_service
+    build: ./visualization_service
+    volumes:
+      - ./visualization_service:/srv/app
+    ports:
+      - "8003:8003"
+    command: "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8003"
+    depends_on:
+      - database
+      - redis
+      - auth_service
+      - storage_service
+    healthcheck:
+      test: [ "CMD-SHELL", "curl localhost:8003/docs" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 2s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - fdb_network
+
 networks:
     fdb_network:
         name: fdb_network
