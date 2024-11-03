@@ -26,10 +26,22 @@ class DataForVisualizationCorrelation(BaseModel):
 
 
 class DataForVisualizationFast(BaseModel):
-    title: str | None
+    title: str | None = None
+
+
+class DataForVisualizationCorrelationFast(
+    DataForVisualizationCorrelation, DataForVisualizationFast
+):
+    cbar: bool = True
     x_lable_rotation: int = 0
 
 
-class DataForVisualizationCorrelationFast(DataForVisualizationFast):
-    columns: list[str] = []
-    cbar: bool = True
+class DataForScatterplot(BaseModel):
+    x_column: str
+    y_column: str
+    hue_column: str | None = None
+
+
+class DataForScatterplotFast(DataForScatterplot, DataForVisualizationFast):
+    dot_size: int = 100
+    need_legend: bool = False
