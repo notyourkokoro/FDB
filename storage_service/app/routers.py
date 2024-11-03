@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_db
-from app.storage import storage
+from app.storage import StogareController
 from app.schemas import (
     AddUserFile,
     StorageFileRead,
@@ -40,12 +40,15 @@ async def upload_file(
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> StorageFileRead:
-    filepath = storage.get_filepath(filename=upload_file_obj.filename, user_id=user_id)
-
-    if not upload_file_obj.filename.endswith(("xlsx", "xls", "csv")):
+    if not upload_file_obj.filename.endswith(
+        tuple(filetype.name for filetype in FileTypeEnum)
+    ):
         raise FileFormatException
 
-    storage.create_file(filepath, upload_file_obj.file)
+    filepath = StogareController.get_filepath(
+        filename=upload_file_obj.filename, user_id=user_id
+    )
+    StogareController.create_file(filepath, upload_file_obj.file)
 
     created_file = await create_user_file(
         filename=upload_file_obj.filename,
@@ -58,10 +61,7 @@ async def upload_file(
     return created_file
 
 
-@router.post(
-    "/based/{file_id}",
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/based/{file_id}", status_code=status.HTTP_201_CREATED)
 async def based_on(
     file_id: int,
     user_id: str = Depends(get_current_user_uuid),
@@ -78,9 +78,13 @@ async def based_on(
     if str(storage_file.creator_id) == user_id:
         raise BasedOnException
 
-    filepath = storage.get_filepath(filename=storage_file.filename, user_id=user_id)
+    filepath = StogareController.get_filepath(
+        filename=storage_file.filename, user_id=user_id
+    )
 
-    storage.create_based_on(filepath_read=storage_file.path, filepath_output=filepath)
+    StogareController.create_based_on(
+        filepath_read=storage_file.path, filepath_output=filepath
+    )
     created_file = await create_user_file(
         filename=storage_file.filename,
         path=filepath,
@@ -93,10 +97,55 @@ async def based_on(
     return created_file
 
 
-@router.post(
-    "/add_user",
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/add/version", status_code=status.HTTP_201_CREATED)
+async def add_version(
+    based_file_id: int,
+    upload_file_obj: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> StorageFileReadFull:
+    if not upload_file_obj.filename.endswith(
+        tuple(filetype.name for filetype in FileTypeEnum)
+    ):
+        raise FileFormatException
+
+    data = await StorageFilePermission.check_user_access_with_data(
+        user_id, based_file_id, session
+    )
+
+    if data["access"] is False:
+        raise FilePermissionException
+
+    storage_file = data["storage_file"]
+
+    need_version = storage_file.version + 1
+
+    filename = StogareController.get_filename_based_on(
+        filename_left=storage_file.filename,
+        filename_right=upload_file_obj.filename,
+    )
+
+    filepath = StogareController.get_filepath(
+        filename=filename,
+        user_id=user_id,
+        version=need_version,
+    )
+
+    StogareController.create_file(filepath, upload_file_obj.file)
+    created_file = await create_user_file(
+        filename=filename,
+        path=filepath,
+        size=upload_file_obj.size,
+        user_id=user_id,
+        based_on_id=based_file_id,
+        version=need_version,
+        session=session,
+    )
+
+    return created_file
+
+
+@router.post("/add/user", status_code=status.HTTP_201_CREATED)
 async def add_filelink_to_user(
     data_to_add: AddUserFile,
     user_id: str = Depends(get_current_user_uuid),
@@ -110,7 +159,7 @@ async def add_filelink_to_user(
     )
 
 
-@router.post("/add_users", status_code=status.HTTP_201_CREATED)
+@router.post("/add/users", status_code=status.HTTP_201_CREATED)
 async def add_filelink_to_users(
     data_to_add: AddUsersFile,
     user_id: str = Depends(get_current_user_uuid),
@@ -171,12 +220,12 @@ async def patch_file(
 
     storage_file = data["storage_file"]
     filetype = FileTypeEnum(storage_file.type_id).name
-    filepath = storage.get_filepath(
+    filepath = StogareController.get_filepath(
         filename="{name}.{type}".format(name=data_to_patch.filename, type=filetype),
         user_id=user_id,
     )
 
-    storage.rename_file(current_path=storage_file.path, new_path=filepath)
+    StogareController.rename_file(current_path=storage_file.path, new_path=filepath)
 
     await update_file(
         storage_file=storage_file,
@@ -200,5 +249,5 @@ async def delete_user_file(
         raise FilePermissionException
     storage_file = data["storage_file"]
 
-    storage.delete_file(storage_file.path)
+    StogareController.delete_file(storage_file.path)
     await remove_file(storage_file=storage_file, session=session)

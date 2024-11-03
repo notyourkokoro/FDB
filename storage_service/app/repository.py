@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import StorageFile, User
-from app.storage import storage
+from app.storage import StogareController
 from app.exceptions import (
     FilePermissionException,
     FileNotFoundException,
@@ -63,7 +63,7 @@ async def create_user_file(
         filename=filename,
         path=path,
         size=size,
-        type_id=storage.get_filetype_id(filename),
+        type_id=StogareController.get_filetype_id(filename),
         version=version,
         based_on_id=based_on_id,
     )

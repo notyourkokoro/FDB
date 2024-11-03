@@ -4,14 +4,14 @@ from contextlib import asynccontextmanager
 
 from app.data.routers import router as data_router
 from app.statistic.routers import router as statistic_router
-from app.memory import memory
+from app.memory import RedisConnection
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await memory.connect()
+    await RedisConnection.connect()
     yield
-    await memory.disconnect()
+    await RedisConnection.disconnect()
 
 
 app = FastAPI(lifespan=lifespan)

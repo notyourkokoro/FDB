@@ -14,7 +14,7 @@ class TempStorage:
     basedir = settings.temp_dir
 
     @staticmethod
-    def _get_name(filetype: DataFormat = DataFormat.XLSX) -> str:
+    def get_name(filetype: DataFormat = DataFormat.XLSX) -> str:
         return f"{round(datetime.now().timestamp() * 100000)}.{filetype.value}"
 
     @classmethod
@@ -28,7 +28,7 @@ class TempStorage:
         filetype: DataFormat = DataFormat.XLSX,
         index=False,
     ) -> str:
-        filename = cls._get_name(filetype)
+        filename = cls.get_name(filetype)
         filepath = cls.get_path(filename)
 
         if filetype == DataFormat.CSV:

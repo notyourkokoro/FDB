@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import FileResponse
 
 from app.dependencies import (
@@ -9,7 +9,7 @@ from app.dependencies import (
     get_user_columns,
     get_user_data,
 )
-from app.memory import memory
+from app.memory import RedisConnection
 from app.requests import get_user_uuid
 from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
@@ -40,7 +40,7 @@ async def load_file(file_id: int, user_token: str = Depends(get_current_user_tok
     df = pd.read_excel(file_obj)
     df = df.rename(columns={col: col.strip() for col in df.columns})
 
-    await memory.set_dataframe(user_id=user_id, df=df, file_id=file_id)
+    await RedisConnection.set_dataframe(user_id=user_id, df=df, file_id=file_id)
 
 
 @router.get("/columns")
@@ -73,9 +73,36 @@ async def rename_columns(
         raise ColumnsNotFoundException(not_found_columns)
 
     df.rename(columns=columns, inplace=True)
-    await memory.set_dataframe(user_id=user_id, df=df)
+    await RedisConnection.set_dataframe(user_id=user_id, df=df)
 
     return df.columns
+
+
+@router.post("/store", status_code=status.HTTP_201_CREATED)
+async def save_progress(
+    save_format: DataFormat = DataFormat.XLSX,
+    user_token: str = Depends(get_current_user_token),
+    data: dict = Depends(get_user_data),
+):
+    file_id, df = data["file_id"], data["data"]
+
+    filename = TempStorage.create_file(df=df, filetype=save_format)
+    filepath = TempStorage.get_path(filename)
+
+    try:
+        with open(filepath, "rb") as buffer:
+            response = await StorageServiceRequests.sent_file(
+                user_token=user_token,
+                file_id=file_id,
+                file_obj=buffer,
+                filetype=save_format,
+            )
+    except Exception as e:
+        raise e
+    finally:
+        TempStorage.delete_file(filepath)
+
+    await RedisConnection.set_file_id(user_id=data["user_id"], file_id=response["id"])
 
 
 @router.post("/recovery")
@@ -124,6 +151,6 @@ async def calculate(
 
     if params.update_df:
         df[params.column_name] = result
-        await memory.set_dataframe(user_id=data["user_id"], df=df)
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
 
     return {params.column_name: result.to_list()}
