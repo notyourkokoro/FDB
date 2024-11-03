@@ -31,10 +31,13 @@ class RedisConnection:
                 )
 
     @classmethod
-    async def set_dataframe(cls, user_id: str, df: pd.DataFrame, file_id: int):
+    async def set_dataframe(
+        cls, user_id: str, df: pd.DataFrame, file_id: int | None = None
+    ):
         await cls.redis.set(f"{user_id}_data", pickle.dumps(df))
         await cls.redis.set(f"{user_id}_columns", pickle.dumps(df.columns))
-        await cls.redis.set(f"{user_id}_file_id", pickle.dumps(file_id))
+        if file_id is not None:
+            await cls.redis.set(f"{user_id}_file_id", pickle.dumps(file_id))
 
     @classmethod
     async def set_file_id(cls, user_id: str, file_id: int):

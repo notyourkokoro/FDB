@@ -11,7 +11,8 @@ from app.statistic.builders import (
     DescriptiveStatisticsBuilder,
     OutliersBuilder,
 )
-from app.utils import ValidateData, TempStorage
+from app.utils import TempStorage
+from app.validation import ValidateData
 from app.exceptions import ColumnsDuplicateException, ColumnsNotFoundException
 from app.schemas import DataFormat
 

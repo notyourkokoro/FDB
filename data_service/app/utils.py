@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.settings import settings
-from app.exceptions import FilepathNotFoundException, ColumnsNotFoundException
+from app.exceptions import FilepathNotFoundException
 from app.schemas import DataFormat, DataMediaType
 
 
@@ -60,15 +60,3 @@ class TempStorage:
             media_type=media_type,
             background=BackgroundTask(cls.delete_file, filepath=filepath),
         )
-
-
-class ValidateData:
-    @staticmethod
-    def check_columns(df: pd.DataFrame, columns: list[str] | None) -> pd.DataFrame:
-        if columns:
-            error_columns = set(columns) - set(df.columns)
-            if len(error_columns) == 0:
-                df = df[columns]
-            else:
-                raise ColumnsNotFoundException(columns=error_columns)
-        return df

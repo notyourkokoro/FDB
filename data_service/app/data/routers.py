@@ -15,7 +15,8 @@ from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
 from app.data.schemas import DataForRecovery, DataForCalculate
 from app.data.builders import RecoveryDataBuilder
-from app.utils import TempStorage, ValidateData
+from app.utils import TempStorage
+from app.validation import ValidateData
 from app.data.exceptions import ColumnsExistsException, EvalException
 from app.schemas import DataFormat
 
@@ -154,3 +155,16 @@ async def calculate(
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
 
     return {params.column_name: result.to_list()}
+
+
+# @router.post("/filter")
+# async def filter_data(expr: str, data: dict = Depends(get_user_data)) -> dict:
+#     df = data["data"]
+
+#     try:
+#         filtered_df = df.query(expr)
+#     except pd.errors.UndefinedVariableError as error:
+#         raise ColumnsNotFoundException([error])
+#     except (ValueError, SyntaxError):
+#         raise EvalException
+#     return filtered_df.to_dict()

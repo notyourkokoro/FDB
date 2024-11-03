@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-
 from app.data.routers import router as data_router
 from app.statistic.routers import router as statistic_router
+from app.calculation.routers import router as calculation_router
 from app.memory import RedisConnection
 
 
@@ -18,3 +18,4 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(data_router)
 app.include_router(statistic_router)
+app.include_router(calculation_router)
