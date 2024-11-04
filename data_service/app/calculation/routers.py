@@ -34,7 +34,7 @@ async def get_bmi_simple(m: float, h: float, description: bool = False) -> dict:
 @router.post("/bmi/dataframe")
 async def get_bmi_full(
     params: ParamsForBMI,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> dict:
     df = ValidateData.check_columns(
         df=data["data"], columns=[params.m_column, params.h_column]

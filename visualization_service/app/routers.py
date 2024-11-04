@@ -6,10 +6,10 @@ import seaborn as sns
 
 from app.schemas import (
     CorrelationMethod,
-    DataForScatterplot,
-    DataForScatterplotFast,
-    DataForVisualizationCorrelation,
-    DataForVisualizationCorrelationFast,
+    ParamsForScatterplot,
+    ParamsForScatterplotFast,
+    ParamsForVisualizationCorrelation,
+    ParamsForVisualizationCorrelationFast,
     ImageFormat,
 )
 from app.validation import CorrelationValidation, ValidateData
@@ -22,9 +22,9 @@ router = APIRouter(prefix="/visualization", tags=["visualization"])
 
 @router.post("/heatmap")
 async def get_heatmap(
-    params: DataForVisualizationCorrelation,
+    params: ParamsForVisualizationCorrelation,
     method: CorrelationMethod = CorrelationMethod.SPEARMAN,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> dict[str, dict[str, float | None]]:
     df = CorrelationValidation.validate(df=data["data"], columns=params.columns)
 
@@ -37,10 +37,10 @@ async def get_heatmap(
 
 @router.post("/heatmap/fast")
 async def get_heatmap_fast(
-    params: DataForVisualizationCorrelationFast,
+    params: ParamsForVisualizationCorrelationFast,
     method: CorrelationMethod = CorrelationMethod.SPEARMAN,
     save_format: ImageFormat = ImageFormat.PNG,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> FileResponse:
     df = CorrelationValidation.validate(df=data["data"], columns=params.columns)
 
@@ -69,8 +69,8 @@ async def get_heatmap_fast(
 
 @router.post("/scatterplot")
 async def get_scatterplot(
-    params: DataForScatterplot,
-    data=Depends(get_user_data),
+    params: ParamsForScatterplot,
+    data: dict = Depends(get_user_data),
 ) -> dict:
     columns = [params.x_column, params.y_column]
     if params.hue_column is not None:
@@ -83,9 +83,9 @@ async def get_scatterplot(
 
 @router.post("/scatterplot/fast")
 async def get_scatterplot_fast(
-    params: DataForScatterplotFast,
+    params: ParamsForScatterplotFast,
     save_format: ImageFormat = ImageFormat.PNG,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> dict:
     columns = [params.x_column, params.y_column]
     if params.hue_column is not None:

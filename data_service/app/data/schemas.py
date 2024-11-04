@@ -8,19 +8,22 @@ class RecoveryMethod(Enum):
     KNN = 0
 
 
-class DataForRecovery(RequestDataBase):
+class ParamsForRecovery(RequestDataBase):
     method: RecoveryMethod
     n_neighbors: int | None = Field(gt=0, default=None)
+    update_df: bool = False
 
 
-class DataForCalculate(BaseModel):
-    column_name: str
+class ParamsForExpr(BaseModel):
     expr: str
+    update_df: bool = False
+
+
+class ParamsForCalculate(ParamsForExpr):
+    column_name: str
     rewrite: bool = False  # перезаписать колонку с таким именем
-    update_df: bool = True
     convert_bool: bool = True
 
 
-class ParamsForFilter(BaseModel):
-    expr: str
+class ParamsForSelect(RequestDataBase):
     update_df: bool = False

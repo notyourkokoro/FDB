@@ -21,12 +21,13 @@ class DataWithGroups(RequestDataBase):
     include_nan: bool = True
 
 
-class DataForOutliers(RequestDataBase):
+class ParamsForOutliers(RequestDataBase):
     y_column: str | None = None
     method: OutliersMethod
+    update_df: bool = False
 
 
-class DataForCorrelation(BaseModel):
+class ParamsForCorrelation(BaseModel):
     left_columns: list[str]
     right_columns: list[str]
     method: CorrelationMethod

@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
 from app.dependencies import get_user_data
-from app.statistic.schemas import DataForCorrelation, DataForOutliers, DataWithGroups
+from app.statistic.schemas import (
+    ParamsForCorrelation,
+    ParamsForOutliers,
+    DataWithGroups,
+)
 from app.statistic.builders import (
     CorrBuilder,
     DataBuilder,
@@ -15,6 +19,7 @@ from app.utils import TempStorage
 from app.validation import ValidateData
 from app.exceptions import ColumnsDuplicateException, ColumnsNotFoundException
 from app.schemas import DataFormat
+from app.memory import RedisConnection
 
 
 router = APIRouter(prefix="/statistic", tags=["statistic"])
@@ -23,7 +28,7 @@ router = APIRouter(prefix="/statistic", tags=["statistic"])
 @router.post("/descriptive")
 async def get_descriptive_statistics(
     params: DataWithGroups,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> dict:
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
     datas = DataBuilder.build(df=df, groups=params.groups)
@@ -37,7 +42,7 @@ async def get_descriptive_statistics(
 async def get_fast_descriptive_statistics(
     params: DataWithGroups,
     save_format: DataFormat = DataFormat.XLSX,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> FileResponse:
     result = await get_descriptive_statistics(params=params, data=data)
     return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
@@ -45,8 +50,8 @@ async def get_fast_descriptive_statistics(
 
 @router.post("/outliers")
 async def get_outliers(
-    params: DataForOutliers,
-    data=Depends(get_user_data),
+    params: ParamsForOutliers,
+    data: dict = Depends(get_user_data),
 ) -> dict[str, list[int]]:
     """
     columns (list[str]): срез данных по столбцам, в котором будут
@@ -58,18 +63,26 @@ async def get_outliers(
     if y_column is not None and y_column not in df.columns:
         raise ColumnsNotFoundException([y_column])
 
-    return OutliersBuilder.build(
+    result = OutliersBuilder.build(
         df=df,
         method_name=str.lower(params.method.name),
         y_column=y_column,
     )
 
+    if params.update_df is True:
+        df = data["data"]
+        for col, val in result.items():
+            df[col] = val
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
+
+    return result
+
 
 @router.post("/outliers/fast")
 async def get_outliers_fast(
-    params: DataForOutliers,
+    params: ParamsForOutliers,
     save_format: DataFormat = DataFormat.XLSX,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> FileResponse:
     result = await get_outliers(params=params, data=data)
     df = data["data"]
@@ -82,8 +95,8 @@ async def get_outliers_fast(
 
 @router.post("/correlation")
 async def get_correlation(
-    params: DataForCorrelation,
-    data=Depends(get_user_data),
+    params: ParamsForCorrelation,
+    data: dict = Depends(get_user_data),
 ) -> dict:
     if set(params.left_columns) & set(params.right_columns):
         raise ColumnsDuplicateException(
@@ -105,9 +118,9 @@ async def get_correlation(
 
 @router.post("/correlation/fast")
 async def get_correlation_fast(
-    params: DataForCorrelation,
+    params: ParamsForCorrelation,
     save_format: DataFormat = DataFormat.XLSX,
-    data=Depends(get_user_data),
+    data: dict = Depends(get_user_data),
 ) -> FileResponse:
     result = await get_correlation(params=params, data=data)
     return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)

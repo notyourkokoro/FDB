@@ -20,28 +20,28 @@ class CorrelationMethod(Enum):
     SPEARMAN = "spearman"
 
 
-class DataForVisualizationCorrelation(BaseModel):
+class ParamsForVisualizationCorrelation(BaseModel):
     columns: list[str] = []
     round_value: int = 2
 
 
-class DataForVisualizationFast(BaseModel):
+class ParamsForVisualizationFast(BaseModel):
     title: str | None = None
 
 
-class DataForVisualizationCorrelationFast(
-    DataForVisualizationCorrelation, DataForVisualizationFast
+class ParamsForVisualizationCorrelationFast(
+    ParamsForVisualizationCorrelation, ParamsForVisualizationFast
 ):
     cbar: bool = True
     x_lable_rotation: int = 0
 
 
-class DataForScatterplot(BaseModel):
+class ParamsForScatterplot(BaseModel):
     x_column: str
     y_column: str
     hue_column: str | None = None
 
 
-class DataForScatterplotFast(DataForScatterplot, DataForVisualizationFast):
+class ParamsForScatterplotFast(ParamsForScatterplot, ParamsForVisualizationFast):
     dot_size: int = 100
     need_legend: bool = False

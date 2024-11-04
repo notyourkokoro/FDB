@@ -12,7 +12,12 @@ from app.memory import RedisConnection
 from app.requests import get_user_uuid
 from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
-from app.data.schemas import DataForRecovery, DataForCalculate, ParamsForFilter
+from app.data.schemas import (
+    ParamsForRecovery,
+    ParamsForCalculate,
+    ParamsForExpr,
+    ParamsForSelect,
+)
 from app.data.builders import RecoveryDataBuilder
 from app.utils import TempStorage
 from app.validation import ValidateData
@@ -105,9 +110,9 @@ async def save_progress(
     await RedisConnection.set_file_id(user_id=data["user_id"], file_id=response["id"])
 
 
-@router.post("/recovery")
+@router.patch("/recovery")
 async def recovery_data(
-    params: DataForRecovery, data: dict = Depends(get_user_data)
+    params: ParamsForRecovery, data: dict = Depends(get_user_data)
 ) -> dict:
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
     recovery_df = RecoveryDataBuilder.recovery(
@@ -115,12 +120,18 @@ async def recovery_data(
         method_name=str.lower(params.method.name),
         n_neighbors=params.n_neighbors,
     )
+
+    if params.update_df is True:
+        df = data["data"]
+        for col in recovery_df.columns:
+            df[col] = recovery_df[col]
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
     return recovery_df.to_dict()
 
 
 @router.post("/recovery/fast")
 async def recovery_data_fast(
-    params: DataForRecovery,
+    params: ParamsForRecovery,
     save_format: DataFormat = DataFormat.XLSX,
     data: dict = Depends(get_user_data),
 ) -> FileResponse:
@@ -128,9 +139,9 @@ async def recovery_data_fast(
     return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
 
 
-@router.post("/calculate")
+@router.patch("/calculate")
 async def calculate(
-    params: DataForCalculate, data: dict = Depends(get_user_data)
+    params: ParamsForCalculate, data: dict = Depends(get_user_data)
 ) -> dict[str, list]:
     df = data["data"]
 
@@ -151,16 +162,16 @@ async def calculate(
     if params.convert_bool is True and isinstance(result.dtype, np.dtypes.BoolDType):
         result = result.astype(int)
 
-    if params.update_df:
+    if params.update_df is True:
         df[params.column_name] = result
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
 
     return {params.column_name: result.to_list()}
 
 
-@router.post("/filter")
+@router.patch("/filter")
 async def filter_data(
-    params: ParamsForFilter, data: dict = Depends(get_user_data)
+    params: ParamsForExpr, data: dict = Depends(get_user_data)
 ) -> dict:
     df = data["data"]
 
@@ -177,3 +188,15 @@ async def filter_data(
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=filtered_df)
 
     return filtered_df.to_dict()
+
+
+@router.patch("/select")
+async def select_data(
+    params: ParamsForSelect, data: dict = Depends(get_user_data)
+) -> dict:
+    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+
+    if params.update_df is True:
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
+
+    return df.to_dict()
