@@ -16,6 +16,11 @@ class DataForRecovery(RequestDataBase):
 class DataForCalculate(BaseModel):
     column_name: str
     expr: str
-    rewrite: bool = False
+    rewrite: bool = False  # перезаписать колонку с таким именем
     update_df: bool = True
     convert_bool: bool = True
+
+
+class ParamsForFilter(BaseModel):
+    expr: str
+    update_df: bool = False

@@ -17,3 +17,8 @@ EvalException = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Некорректное выражение!",
 )
+
+EvalTypeException = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Некорректное сопоставление типов данных в выражении!",
+)

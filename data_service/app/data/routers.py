@@ -12,11 +12,11 @@ from app.memory import RedisConnection
 from app.requests import get_user_uuid
 from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
-from app.data.schemas import DataForRecovery, DataForCalculate
+from app.data.schemas import DataForRecovery, DataForCalculate, ParamsForFilter
 from app.data.builders import RecoveryDataBuilder
 from app.utils import TempStorage
 from app.validation import ValidateData
-from app.data.exceptions import ColumnsExistsException, EvalException
+from app.data.exceptions import ColumnsExistsException, EvalException, EvalTypeException
 from app.schemas import DataFormat
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -143,6 +143,8 @@ async def calculate(
         raise ColumnsNotFoundException([error])
     except (ValueError, SyntaxError):
         raise EvalException
+    except (TypeError, np._core._exceptions._UFuncNoLoopError):
+        raise EvalTypeException
     if isinstance(result, pd.DataFrame):
         raise EvalException
 
@@ -156,14 +158,22 @@ async def calculate(
     return {params.column_name: result.to_list()}
 
 
-# @router.post("/filter")
-# async def filter_data(expr: str, data: dict = Depends(get_user_data)) -> dict:
-#     df = data["data"]
+@router.post("/filter")
+async def filter_data(
+    params: ParamsForFilter, data: dict = Depends(get_user_data)
+) -> dict:
+    df = data["data"]
 
-#     try:
-#         filtered_df = df.query(expr)
-#     except pd.errors.UndefinedVariableError as error:
-#         raise ColumnsNotFoundException([error])
-#     except (ValueError, SyntaxError):
-#         raise EvalException
-#     return filtered_df.to_dict()
+    try:
+        filtered_df = df.query(params.expr)
+    except pd.errors.UndefinedVariableError as error:
+        raise ColumnsNotFoundException([error])
+    except (ValueError, SyntaxError):
+        raise EvalException
+    except TypeError:
+        raise EvalTypeException
+
+    if params.update_df is True:
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=filtered_df)
+
+    return filtered_df.to_dict()
