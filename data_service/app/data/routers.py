@@ -72,6 +72,11 @@ async def get_data_info(info: dict = Depends(get_user_data)) -> dict:
     }
 
 
+@router.get("/dataframe")
+def get_dataframe(data: dict = Depends(get_user_data)) -> dict:
+    return data["data"].to_dict()
+
+
 @router.patch("/columns/rename")
 async def rename_columns(
     columns: dict[str, str], data: dict = Depends(get_user_data)
