@@ -6,7 +6,6 @@ from fastapi.responses import FileResponse
 
 from app.dependencies import (
     get_current_user_token,
-    get_user_columns,
     get_user_data,
 )
 from app.memory import RedisConnection
@@ -45,12 +44,12 @@ async def load_file(file_id: int, user_token: str = Depends(get_current_user_tok
 
 
 @router.get("/columns")
-async def get_columns(columns: list = Depends(get_user_columns)) -> list[str]:
-    return columns
+async def get_columns(data: dict = Depends(get_user_data)) -> list[str]:
+    return data["data"].columns.to_list()
 
 
 @router.get("/info")
-async def get_data_info(info: list = Depends(get_user_data)) -> dict:
+async def get_data_info(info: dict = Depends(get_user_data)) -> dict:
     return {
         "file_id": info["file_id"],
         "rows": len(info["data"]),

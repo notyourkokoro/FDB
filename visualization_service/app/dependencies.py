@@ -23,13 +23,6 @@ async def get_current_user_uuid(
     return await get_user_uuid(user_token=token)
 
 
-async def get_user_columns(
-    credentials: HTTPAuthorizationCredentials = Security(security),
-) -> list:
-    user_id = await get_current_user_uuid(credentials=credentials)
-    return await RedisConnection.get_columns(user_id=user_id)
-
-
 async def get_user_data(
     credentials: HTTPAuthorizationCredentials = Security(security),
 ) -> pd.DataFrame:
