@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import FileResponse
 
@@ -21,7 +23,13 @@ from app.data.schemas import (
 from app.data.builders import RecoveryDataBuilder
 from app.utils import TempStorage
 from app.validation import ValidateData
-from app.data.exceptions import ColumnsExistsException, EvalException, EvalTypeException
+from app.data.exceptions import (
+    ColumnsExistsException,
+    EvalException,
+    EvalTypeException,
+    LoadCSVException,
+    CSVSepException,
+)
 from app.schemas import DataFormat
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -36,13 +44,29 @@ async def save_df(
 
 
 @router.get("/load/{file_id}")
-async def load_file(file_id: int, user_token: str = Depends(get_current_user_token)):
-    file_obj = await StorageServiceRequests.get_user_file(
+async def load_file(
+    file_id: int,
+    sep: str | None = None,
+    user_token: str = Depends(get_current_user_token),
+):
+    bytes_content = await StorageServiceRequests.get_user_file(
         user_token=user_token, file_id=file_id
     )
     user_id = await get_user_uuid(user_token=user_token)
 
-    df = pd.read_excel(file_obj)
+    file_obj = BytesIO(bytes_content)
+    if bytes_content.startswith(b"PK\x03\x04") or bytes_content.startswith(
+        b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    ):
+        df = pd.read_excel(file_obj)
+    else:
+        if sep is None:
+            raise CSVSepException
+        try:
+            df = pd.read_csv(file_obj, sep=sep)
+        except Exception:
+            raise LoadCSVException
+
     df = df.rename(columns={col: col.strip() for col in df.columns})
 
     await RedisConnection.set_dataframe(user_id=user_id, df=df, file_id=file_id)
