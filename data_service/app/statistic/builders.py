@@ -3,6 +3,8 @@ import numpy as np
 
 from scipy import stats
 from sklearn.ensemble import IsolationForest
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 from app.exceptions import ColumnsNotFoundException
 from app.statistic.exceptions import (
@@ -12,6 +14,7 @@ from app.statistic.exceptions import (
     EmptyColumnException,
     NanColumnsException,
 )
+from app.statistic.schemas import ClusteringMethod
 
 
 class DescriptiveStatisticsBuilder:
@@ -182,7 +185,9 @@ class OutliersBuilder:
         return outliers
 
     @classmethod
-    def z_score(cls, df: pd.DataFrame, y_column: str | None = None, threshold: float = 3) -> pd.Series:
+    def z_score(
+        cls, df: pd.DataFrame, y_column: str | None = None, threshold: float = 3
+    ) -> pd.Series:
         df_for_outliers = np.abs(cls._calculate_z_score(df))
         if y_column is not None:
             df_for_outliers = df_for_outliers[[y_column]]
@@ -265,7 +270,8 @@ class CorrBuilder:
 
     @classmethod
     def build(
-        cls, df: pd.DataFrame,
+        cls,
+        df: pd.DataFrame,
         left_columns: list[str],
         right_columns: list[str],
         round_value: int = 2,
@@ -281,11 +287,45 @@ class CorrBuilder:
                 n = len(temp_df)
                 # коэффициент и p-value ранговой корреляции Спирмена
                 rho, p = stats.spearmanr(temp_df[left_col], temp_df[right_col])
-                result.append([
-                    f"{left_col} / {right_col}",
-                    n,
-                    str(round(rho, round_value)),
-                    str(round(p, round_value)),
-                ])
+                result.append(
+                    [
+                        f"{left_col} / {right_col}",
+                        n,
+                        str(round(rho, round_value)),
+                        str(round(p, round_value)),
+                    ]
+                )
 
         return pd.DataFrame(result, columns=cls.headers)
+
+
+class ClustersBuilder:
+    @classmethod
+    def _get_name(cls, method: ClusteringMethod) -> str:
+        return f"{method.value}_clusters"
+
+    @classmethod
+    def _data_standardization(cls, df: pd.DataFrame) -> np.ndarray:
+        scaler = StandardScaler()
+        df_normalized = scaler.fit_transform(df)
+        return df_normalized
+
+    @staticmethod
+    def kmeans(df: pd.DataFrame, n_clusters: int, seed: int = 14) -> pd.DataFrame:
+        model = KMeans(n_clusters=n_clusters, random_state=seed)
+        df_normalized = ClustersBuilder._data_standardization(df)
+
+        return model.fit_predict(df_normalized)
+
+    @classmethod
+    def build(
+        cls,
+        df: pd.DataFrame,
+        method: ClusteringMethod,
+        n_clusters: int = 3,
+    ) -> dict[str, int]:
+        func = getattr(cls, method.value)
+        result = func(df=df, n_clusters=n_clusters)
+        name = cls._get_name(method)
+
+        return {name: result.tolist()}

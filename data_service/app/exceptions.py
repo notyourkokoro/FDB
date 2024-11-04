@@ -35,6 +35,16 @@ class ColumnsDuplicateException(HTTPException):
         )
 
 
+class NotNumericTypeException(HTTPException):
+    def __init__(self, columns: list[str]):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Колонки имеют тип данных, отличный от числового: {columns}".format(
+                columns=", ".join(map(str, columns))
+            ),
+        )
+
+
 FilepathNotFoundException = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Файл по данному пути не найден!",

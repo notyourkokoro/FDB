@@ -5,11 +5,15 @@ from fastapi.responses import FileResponse
 
 from app.dependencies import get_user_data
 from app.statistic.schemas import (
+    ClusteringMethod,
+    ParamsForClustering,
+    ParamsForClusteringFast,
     ParamsForCorrelation,
     ParamsForOutliers,
     DataWithGroups,
 )
 from app.statistic.builders import (
+    ClustersBuilder,
     CorrBuilder,
     DataBuilder,
     DescriptiveStatisticsBuilder,
@@ -70,9 +74,7 @@ async def get_outliers(
     )
 
     if params.update_df is True:
-        df = data["data"]
-        for col, val in result.items():
-            df[col] = val
+        df = data["data"].assign(**result)
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
 
     return result
@@ -124,3 +126,37 @@ async def get_correlation_fast(
 ) -> FileResponse:
     result = await get_correlation(params=params, data=data)
     return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
+
+
+@router.post("/clustering")
+async def get_clusters(
+    params: ParamsForClustering,
+    method: ClusteringMethod = ClusteringMethod.KMEANS,
+    data: dict = Depends(get_user_data),
+) -> dict:
+    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    ValidateData.check_numeric_type(df, df.columns)
+
+    result = ClustersBuilder.build(df=df, method=method, n_clusters=params.n_clusters)
+    if params.update_df is True:
+        df = data["data"].assign(**result)
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
+
+    return result
+
+
+@router.post("/clustering/fast")
+async def get_clusters_fast(
+    params: ParamsForClusteringFast,
+    method: ClusteringMethod = ClusteringMethod.KMEANS,
+    save_format: DataFormat = DataFormat.XLSX,
+    data: dict = Depends(get_user_data),
+) -> dict[str, int]:
+    df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    ValidateData.check_numeric_type(df, df.columns)
+
+    result = ClustersBuilder.build(df=df, method=method, n_clusters=params.n_clusters)
+
+    return TempStorage.return_file(
+        df=data["data"].assign(**result), save_format=save_format
+    )

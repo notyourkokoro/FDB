@@ -131,9 +131,7 @@ async def recovery_data(
     )
 
     if params.update_df is True:
-        df = data["data"]
-        for col in recovery_df.columns:
-            df[col] = recovery_df[col]
+        df = data["data"].assign(**recovery_df.to_dict())
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
     return recovery_df.to_dict()
 

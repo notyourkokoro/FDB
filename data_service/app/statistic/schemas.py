@@ -16,6 +16,10 @@ class CorrelationMethod(Enum):
     SPEARMAN = 2
 
 
+class ClusteringMethod(Enum):
+    KMEANS = "kmeans"
+
+
 class DataWithGroups(RequestDataBase):
     groups: list[dict[str, str | int]]
     include_nan: bool = True
@@ -33,3 +37,11 @@ class ParamsForCorrelation(BaseModel):
     method: CorrelationMethod
     round_value: int = 2
     dropna: bool = True
+
+
+class ParamsForClusteringFast(RequestDataBase):
+    n_clusters: int = 3
+
+
+class ParamsForClustering(ParamsForClusteringFast):
+    update_df: bool = False
