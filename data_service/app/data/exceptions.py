@@ -23,7 +23,6 @@ EvalTypeException = HTTPException(
     detail="Некорректное сопоставление типов данных в выражении!",
 )
 
-
 CSVSepException = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="При загрузке CSV-файла должен быть обязательно указан разделитель!",
@@ -32,4 +31,9 @@ CSVSepException = HTTPException(
 LoadCSVException = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Ошибка при загрузке CSV-файла. Вероятно, неверно указан разделитель",
+)
+
+MergeColumnsTypeException = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Некорректное сопоставление типов данных в колонках!",
 )

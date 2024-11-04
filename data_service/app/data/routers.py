@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 
-from io import BytesIO
-
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import FileResponse
 
@@ -15,6 +13,8 @@ from app.requests import get_user_uuid
 from app.data.requests import StorageServiceRequests
 from app.exceptions import ColumnsNotFoundException
 from app.data.schemas import (
+    MergeMethod,
+    ParamsForMerge,
     ParamsForRecovery,
     ParamsForCalculate,
     ParamsForExpr,
@@ -27,8 +27,7 @@ from app.data.exceptions import (
     ColumnsExistsException,
     EvalException,
     EvalTypeException,
-    LoadCSVException,
-    CSVSepException,
+    MergeColumnsTypeException,
 )
 from app.schemas import DataFormat
 
@@ -49,24 +48,10 @@ async def load_file(
     sep: str | None = None,
     user_token: str = Depends(get_current_user_token),
 ):
-    bytes_content = await StorageServiceRequests.get_user_file(
-        user_token=user_token, file_id=file_id
-    )
     user_id = await get_user_uuid(user_token=user_token)
-
-    file_obj = BytesIO(bytes_content)
-    if bytes_content.startswith(b"PK\x03\x04") or bytes_content.startswith(
-        b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
-    ):
-        df = pd.read_excel(file_obj)
-    else:
-        if sep is None:
-            raise CSVSepException
-        try:
-            df = pd.read_csv(file_obj, sep=sep)
-        except Exception:
-            raise LoadCSVException
-
+    df = await StorageServiceRequests.get_user_file(
+        user_token=user_token, file_id=file_id, sep=sep
+    )
     df = df.rename(columns={col: col.strip() for col in df.columns})
 
     await RedisConnection.set_dataframe(user_id=user_id, df=df, file_id=file_id)
@@ -224,3 +209,34 @@ async def select_data(
         await RedisConnection.set_dataframe(user_id=data["user_id"], df=df)
 
     return df.to_dict()
+
+
+@router.patch("/merge")
+async def merge_data(
+    params: ParamsForMerge,
+    method: MergeMethod = MergeMethod.LEFT,
+    data: dict = Depends(get_user_data),
+    user_token: str = Depends(get_current_user_token),
+) -> dict:
+    ValidateData.check_columns(df=data["data"], columns=params.left_columns)
+
+    df_for_merge = await StorageServiceRequests.get_user_file(
+        user_token=user_token, file_id=params.other_file_id, sep=params.right_sep
+    )
+    ValidateData.check_columns(df=df_for_merge, columns=params.right_columns)
+
+    try:
+        result_df = pd.merge(
+            data["data"],
+            df_for_merge,
+            how=method.value,
+            left_on=params.left_columns,
+            right_on=params.right_columns,
+        )
+    except ValueError:
+        raise MergeColumnsTypeException
+
+    if params.update_df is True:
+        await RedisConnection.set_dataframe(user_id=data["user_id"], df=result_df)
+
+    return result_df.to_dict()
