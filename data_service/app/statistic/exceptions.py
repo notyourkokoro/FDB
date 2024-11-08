@@ -32,6 +32,16 @@ class NanColumnsException(HTTPException):
         )
 
 
+class BinaryColumnsException(HTTPException):
+    def __init__(self, columns: list[str]):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Следующие колонки имеют значения, отличные от 0, 1 и None: {columns}".format(
+                columns=", ".join(columns)
+            ),
+        )
+
+
 BASE_PRINT = "При выполнении функции {name} с данными {data} возникла ошибка: {error}"
 
 

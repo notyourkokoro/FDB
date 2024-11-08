@@ -45,3 +45,8 @@ class ParamsForClusteringFast(RequestDataBase):
 
 class ParamsForClustering(ParamsForClusteringFast):
     update_df: bool = False
+
+
+class ParamsForOR(RequestDataBase):
+    target_column: str
+    split_column: str | None = None

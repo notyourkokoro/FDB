@@ -6,3 +6,4 @@ xlrd
 scipy
 scikit-learn
 numpy
+statsmodels

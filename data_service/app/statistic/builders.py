@@ -1,16 +1,15 @@
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 
 from scipy import stats
 from sklearn.ensemble import IsolationForest
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-from app.exceptions import ColumnsNotFoundException
 from app.statistic.exceptions import (
     BASE_PRINT,
-    BadGroupParamsException,
-    BadOperationException,
+    BinaryColumnsException,
     EmptyColumnException,
     NanColumnsException,
 )
@@ -97,59 +96,6 @@ class DescriptiveStatisticsBuilder:
             result[name] = column_result
 
         return result
-
-
-class DataBuilder:
-    operations = {">", "<", ">=", "<=", "==", "!="}
-
-    @classmethod
-    def _get_value(cls, value: str) -> str | float | int:
-        if value.isdigit():
-            return int(value)
-
-        if value.replace(".", "", 1).isdigit():
-            return float(value)
-
-        return value
-
-    @classmethod
-    def create_group(
-        cls, df: pd.DataFrame, params: dict[str, str | int]
-    ) -> tuple[str, pd.DataFrame]:
-        if len(params) != 3:
-            raise BadGroupParamsException
-
-        column, operation, value = params.values()
-        value = cls._get_value(value)
-
-        if column not in df.columns:
-            raise ColumnsNotFoundException([column])
-
-        if operation not in cls.operations:
-            raise BadOperationException(cls.operations)
-
-        if operation != "==" and isinstance(value, str):
-            raise BadOperationException(operations=["=="], value_type="str")
-
-        return (
-            f"{column} {operation} {value}",
-            eval(f"df[df[{repr(column)}] {operation} {repr(value)}]"),
-        )
-
-    @classmethod
-    def build(
-        cls,
-        df: pd.DataFrame,
-        groups: list[dict[str, str | int]] | None = None,
-    ) -> dict[str, pd.DataFrame]:
-        datas = {"all": df}
-
-        if groups is not None:
-            for group in groups:
-                name, data = cls.create_group(df, group)
-                datas[name] = data
-
-        return datas
 
 
 class OutliersBuilder:
@@ -256,7 +202,7 @@ class OutliersBuilder:
         outliers = func(df, y_column)
         if isinstance(outliers, pd.Series):
             outliers = outliers.to_list()
-        name = f"{method_name}_outliers{f'_{y_column}' if y_column is not None else ""}"
+        name = f"{method_name}_outliers{f"_{y_column}" if y_column is not None else ""}"
         return {name: outliers}
 
 
@@ -329,3 +275,98 @@ class ClustersBuilder:
         name = cls._get_name(method)
 
         return {name: result.tolist()}
+
+
+class ORBuilder:
+    binary_set = {0, 1}
+
+    def _is_binary(self, sr: pd.Series) -> bool:
+        sr = sr.dropna()
+        unique_vals = set(sr.unique())
+
+        return unique_vals.issubset(self.binary_set)
+
+    def _to_binary(self, sr: pd.Series) -> pd.Series:
+        # Определяем максимальное и минимальное значения
+        max_value = sr.max()
+        min_value = sr.min()
+
+        # Заменяем максимальные значения на 1, минимальные на 0
+        sr = sr.where(sr != max_value, 1).where(sr != min_value, 0)
+
+        return sr
+
+    def _set_datas(self):
+        self.datas = dict()
+        for i in range(2):
+            split_data = self._df[self._df[self.split_column] == i]
+
+            name = f"{self.split_column} == {i} (N = {len(split_data)})"
+            self.datas[name] = split_data
+            self.result[name] = []
+
+        self.result["ОШ 95% ДИ"] = []
+
+    def _calulate(self):
+        for col in self._df.columns:
+            if col == self.target_column or col == self.split_column:
+                continue
+            try:
+                current_df = self._df[[col, self.target_column]]
+                # удаление строк с пустыми ячейками
+                current_df = current_df.dropna()
+
+                # разбивка данных для модели
+                X = current_df[col]
+                y = current_df[self.target_column]
+
+                # добавление константы для интерсепта
+                X = sm.add_constant(X)
+
+                # создание модели
+                model = sm.Logit(y, X)
+                fit_model = model.fit()
+
+                # формирование результата
+                local_result = fit_model.conf_int()
+                local_result["OR"] = fit_model.params
+                local_result.columns = ["2.5%", "97.5%", "OR"]
+                local_result = round(np.exp(local_result), 3)
+
+                # добавление результата в отчет
+                self.result["ОШ 95% ДИ"].append(
+                    f"{local_result["OR"][col]} ({local_result["2.5%"][col]}; {local_result["97.5%"][col]})"
+                )
+
+            except Exception as e:
+                self.result["ОШ 95% ДИ"].append("N/A")
+                print(e)
+
+            for name, dict_data in self.datas.items():
+                self.result[name].append(
+                    f"{len(dict_data[col].dropna())}/{len(dict_data)}"
+                )
+            self.add_rows.append(col)
+
+    def __init__(self, df: pd.DataFrame, target_column: str, split_column: str):
+        self._df = df
+        self.target_column = target_column
+        self.split_column = split_column
+
+    def build(self) -> dict[str, list[str]]:
+        self.add_rows = []
+        self.result = {"Колонки": self.add_rows}
+
+        self._set_datas()
+
+        error_columns = []
+        for column in (self.target_column, self.split_column):
+            if not self._is_binary(self._df[column]):
+                error_columns.append(column)
+
+        if len(error_columns) != 0:
+            raise BinaryColumnsException(columns=error_columns)
+
+        self._calulate()
+
+        return self.result

@@ -9,16 +9,18 @@ from app.statistic.schemas import (
     ParamsForClustering,
     ParamsForClusteringFast,
     ParamsForCorrelation,
+    ParamsForOR,
     ParamsForOutliers,
     DataWithGroups,
 )
 from app.statistic.builders import (
     ClustersBuilder,
     CorrBuilder,
-    DataBuilder,
     DescriptiveStatisticsBuilder,
+    ORBuilder,
     OutliersBuilder,
 )
+from app.data.builders import DataBuilder
 from app.utils import TempStorage
 from app.validation import ValidateData
 from app.exceptions import ColumnsDuplicateException, ColumnsNotFoundException
@@ -151,7 +153,7 @@ async def get_clusters_fast(
     method: ClusteringMethod = ClusteringMethod.KMEANS,
     save_format: DataFormat = DataFormat.XLSX,
     data: dict = Depends(get_user_data),
-) -> dict[str, int]:
+) -> FileResponse:
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
     ValidateData.check_numeric_type(df, df.columns)
 
@@ -160,3 +162,37 @@ async def get_clusters_fast(
     return TempStorage.return_file(
         df=data["data"].assign(**result), save_format=save_format
     )
+
+
+@router.post("/or")
+async def get_or_table(
+    params: ParamsForOR, data: dict = Depends(get_user_data)
+) -> dict:
+    params_columns = [params.target_column]
+    if params.split_column is not None:
+        params_columns.append(params.split_column)
+
+    if params.columns:
+        main_columns = params.columns
+    else:
+        main_columns = data["data"].columns.to_list()
+
+    columns = list(frozenset(main_columns + params_columns))
+
+    df = ValidateData.check_columns(df=data["data"], columns=columns)
+
+    builder = ORBuilder(
+        df=df, target_column=params_columns[0], split_column=params_columns[-1]
+    )
+
+    return builder.build()
+
+
+@router.post("/or/fast")
+async def get_or_table_fast(
+    params: ParamsForOR,
+    save_format: DataFormat = DataFormat.XLSX,
+    data: dict = Depends(get_user_data),
+) -> FileResponse:
+    result = await get_or_table(params=params, data=data)
+    return TempStorage.return_file(df=pd.DataFrame(result), save_format=save_format)
