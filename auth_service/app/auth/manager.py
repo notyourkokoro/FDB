@@ -5,8 +5,8 @@ from fastapi import Depends, Request, Response
 from fastapi_users import BaseUserManager, UUIDIDMixin, FastAPIUsers
 from fastapi_users.db import SQLAlchemyUserDatabase
 
-from app.config import auth_backend
-from app.models import User
+from app.auth.config import auth_backend
+from app.auth.models import User
 from app.utils import get_user_db
 from app.settings import settings
 
