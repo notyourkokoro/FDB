@@ -3,3 +3,4 @@ fastapi-users[sqlalchemy]
 sqlalchemy
 asyncpg
 alembic
+sqladmin[full]
