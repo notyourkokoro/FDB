@@ -5,7 +5,7 @@ from app.storage_service.models import (  # noqa F401 - необходимо д�
     FileType,
     StorageFile,
 )
-from app.auth_service.models import User
+from app.auth_service.models import User, Group
 
 
 class UserView(ModelView, model=User):
@@ -23,3 +23,7 @@ class StorageFileView(ModelView, model=StorageFile):
         StorageFile.type_id,
         StorageFile.size,
     ]
+
+
+class GroupView(ModelView, model=Group):
+    column_list = [Group.id, Group.creator_id, Group.name]
