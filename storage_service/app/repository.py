@@ -1,4 +1,5 @@
 from typing import Sequence
+
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -136,8 +137,6 @@ async def update_file(
         )
         .values(**data_to_update)
     )
-
-    print(stmt)
 
     await session.execute(stmt)
     await session.commit()

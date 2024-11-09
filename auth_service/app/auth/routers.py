@@ -46,7 +46,6 @@ async def jwt_decode(
         )
 
     user = await session.scalar(select(User).where(User.id == user_uuid))
-    print(user)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
