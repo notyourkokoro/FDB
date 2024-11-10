@@ -197,12 +197,26 @@ async def add_filelink_to_group(
     )
 
 
-@router.get("/list")
+@router.get("/list/my")
 async def get_user_files(
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> Sequence[StorageFileList]:
     return await select_user_files(user_id=user_id, session=session)
+
+
+@router.get("/list/group/{group_id}")
+async def get_group_files(
+    group_id: int,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+) -> Sequence[StorageFileList]:
+    group = await select_group(group_id=group_id, session=session)
+
+    if user_id not in [str(user.id) for user in group.users]:
+        raise GroupPermissionException
+
+    return group.files
 
 
 @router.get("/{file_id}")

@@ -27,13 +27,12 @@ from app.group.exceptions import GroupPermissionException, DeleteUserFromGroupEx
 router = APIRouter(prefix="/groups", tags=["groups"])
 
 
-@router.get("/list")
+@router.get("/list/my")
 async def get_groups(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> Sequence[GroupRead]:
     groups = await select_user_groups(user_id=user.id, session=session)
-    print(list(groups))
     return groups
 
 
