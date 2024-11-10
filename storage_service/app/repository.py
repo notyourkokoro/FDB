@@ -4,15 +4,19 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import StorageFile, User
+from app.models import Group, StorageFile, User
 from app.storage import StogareController
 from app.exceptions import (
+    FileGroupExistsException,
     FilePermissionException,
     FileNotFoundException,
     UserNotFoundException,
     FileExistsException,
     UsersNotFoundException,
     UserAccessToStorageFile,
+    GroupNotFoundException,
+    GroupPermissionException,
+    FileInGroupNotFoundException,
 )
 
 
@@ -48,6 +52,20 @@ async def select_file(file_id: int, session: AsyncSession) -> StorageFile:
     if storage_file is None:
         raise FileNotFoundException
     return storage_file
+
+
+async def select_group(group_id: int, session: AsyncSession) -> Group:
+    stmt = (
+        select(Group)
+        .options(selectinload(Group.users))
+        .options(selectinload(Group.files))
+        .where(Group.id == group_id)
+    )
+
+    group = await session.scalar(stmt)
+    if group is None:
+        raise GroupNotFoundException
+    return group
 
 
 async def create_user_file(
@@ -159,4 +177,33 @@ async def remove_user_from_file(
         raise UserAccessToStorageFile
 
     storage_file.users.remove(user)
+    await session.commit()
+
+
+async def add_file_for_group(
+    user_id: str, group_id: str, file_id: int, session: AsyncSession
+):
+    storage_file = await select_file(file_id=file_id, session=session)
+
+    if user_id != str(storage_file.creator_id):
+        raise FilePermissionException
+
+    group = await select_group(group_id=group_id, session=session)
+
+    if user_id not in [str(user.id) for user in group.users]:
+        raise GroupPermissionException
+
+    if storage_file in group.files:
+        raise FileGroupExistsException(name=group.name)
+
+    group.files.append(storage_file)
+    await session.commit()
+
+
+async def remove_file_from_group(group: Group, file_id: int, session: AsyncSession):
+    storage_file = await select_file(file_id=file_id, session=session)
+    if storage_file not in group.files:
+        raise FileInGroupNotFoundException
+
+    group.files.remove(storage_file)
     await session.commit()

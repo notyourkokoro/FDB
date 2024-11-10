@@ -47,3 +47,12 @@ class AddUsersFile(BaseModel):
 
 class DeleteUserFile(AddUserFile):
     pass
+
+
+class AddGroupFile(BaseModel):
+    group_id: int
+    file_id: int
+
+
+class DeleteGroupFile(AddGroupFile):
+    pass

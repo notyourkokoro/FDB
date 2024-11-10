@@ -36,7 +36,7 @@ UserNotFoundException = HTTPException(
 
 GroupNotFoundException = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
-    detail="Группа c таким ИД не найден!",
+    detail="Группа c таким ИД не найдена!",
 )
 
 

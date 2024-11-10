@@ -112,3 +112,11 @@ class GroupFile(Base):
     file_id: Mapped[int] = mapped_column(
         ForeignKey("storage_files.id", ondelete="CASCADE")
     )
+
+
+class UserGroup(Base):
+    __tablename__ = "users_groups"
+
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))

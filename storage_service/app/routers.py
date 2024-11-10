@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import async_db
 from app.storage import StogareController
 from app.schemas import (
+    AddGroupFile,
     AddUserFile,
+    DeleteGroupFile,
     DeleteUserFile,
     StorageFileRead,
     StorageFileList,
@@ -16,10 +18,13 @@ from app.schemas import (
     StorageFileReadFull,
 )
 from app.repository import (
+    add_file_for_group,
     create_user_file,
     remove_file,
+    remove_file_from_group,
     remove_user_from_file,
     select_file,
+    select_group,
     select_user_files,
     add_file_to_user,
     update_file,
@@ -31,6 +36,7 @@ from app.exceptions import (
     FilePermissionException,
     BasedOnException,
     DeleteUserFileException,
+    GroupPermissionException,
 )
 from app.permissions import StorageFilePermission
 from app.models import FileTypeEnum
@@ -177,6 +183,20 @@ async def add_filelink_to_users(
     )
 
 
+@router.post("/add/group", status_code=status.HTTP_201_CREATED)
+async def add_filelink_to_group(
+    data_to_add: AddGroupFile,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+):
+    await add_file_for_group(
+        user_id=user_id,
+        group_id=data_to_add.group_id,
+        file_id=data_to_add.file_id,
+        session=session,
+    )
+
+
 @router.get("/list")
 async def get_user_files(
     user_id: str = Depends(get_current_user_uuid),
@@ -241,7 +261,7 @@ async def patch_file(
 
 
 @router.delete("/delete/user", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user_from_group(
+async def delete_user_from_file(
     params: DeleteUserFile,
     user_id: str = Depends(get_current_user_uuid),
     session: AsyncSession = Depends(async_db.get_async_session),
@@ -256,6 +276,19 @@ async def delete_user_from_group(
     await remove_user_from_file(
         user_id=params.to_user_id, storage_file=storage_file, session=session
     )
+
+
+@router.delete("/delete/group", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group_from_file(
+    params: DeleteGroupFile,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+):
+    group = await select_group(group_id=params.group_id, session=session)
+    if user_id not in [str(user.id) for user in group.users]:
+        raise GroupPermissionException
+
+    await remove_file_from_group(group=group, file_id=params.file_id, session=session)
 
 
 @router.delete("/delete/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
