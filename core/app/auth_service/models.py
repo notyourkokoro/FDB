@@ -39,6 +39,12 @@ class Group(Base):
         secondary="users_groups", back_populates="groups"
     )
 
+    files: Mapped[list["StorageFile"]] = relationship(
+        secondary="groups_files",
+        back_populates="groups",
+        cascade="all, delete",
+    )
+
 
 class UserGroup(Base):
     __tablename__ = "users_groups"

@@ -20,6 +20,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         cascade="all, delete",
     )
 
+    groups: Mapped[list["Group"]] = relationship(
+        secondary="users_groups",
+        back_populates="users",
+    )
+
 
 class FileTypeEnum(Enum):
     csv = 1
@@ -61,6 +66,10 @@ class StorageFile(Base):
         secondary="users_files", back_populates="files", passive_deletes=True
     )
 
+    groups: Mapped[list["Group"]] = relationship(
+        secondary="groups_files", back_populates="files"
+    )
+
     def __repr__(self):
         return "{name}(id={id}, name={filename})".format(
             name=self.__class__.__name__,
@@ -74,6 +83,32 @@ class UserFile(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    file_id: Mapped[int] = mapped_column(
+        ForeignKey("storage_files.id", ondelete="CASCADE")
+    )
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    creator_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str] = mapped_column(unique=True)
+
+    users: Mapped[list["User"]] = relationship(
+        secondary="users_groups", back_populates="groups"
+    )
+
+    files: Mapped[list["StorageFile"]] = relationship(
+        secondary="groups_files", back_populates="groups"
+    )
+
+
+class GroupFile(Base):
+    __tablename__ = "groups_files"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))
     file_id: Mapped[int] = mapped_column(
         ForeignKey("storage_files.id", ondelete="CASCADE")
     )

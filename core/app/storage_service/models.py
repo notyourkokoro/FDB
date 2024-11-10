@@ -12,7 +12,7 @@ from app.database import Base
 
 
 if TYPE_CHECKING:
-    from app.auth_service.models import User
+    from app.auth_service.models import User, Group
 
 
 class FileTypeEnum(Enum):
@@ -55,6 +55,10 @@ class StorageFile(Base):
         secondary="users_files", back_populates="files", passive_deletes=True
     )
 
+    groups: Mapped[list["Group"]] = relationship(
+        secondary="groups_files", back_populates="files"
+    )
+
     def __repr__(self):
         return "{name}(id={id}, name={filename})".format(
             name=self.__class__.__name__,
@@ -68,6 +72,16 @@ class UserFile(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    file_id: Mapped[int] = mapped_column(
+        ForeignKey("storage_files.id", ondelete="CASCADE")
+    )
+
+
+class GroupFile(Base):
+    __tablename__ = "groups_files"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))
     file_id: Mapped[int] = mapped_column(
         ForeignKey("storage_files.id", ondelete="CASCADE")
     )
