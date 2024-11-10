@@ -8,6 +8,7 @@ from app.database import async_db
 from app.storage import StogareController
 from app.schemas import (
     AddUserFile,
+    DeleteUserFile,
     StorageFileRead,
     StorageFileList,
     StorageFilePatch,
@@ -17,6 +18,8 @@ from app.schemas import (
 from app.repository import (
     create_user_file,
     remove_file,
+    remove_user_from_file,
+    select_file,
     select_user_files,
     add_file_to_user,
     update_file,
@@ -27,6 +30,7 @@ from app.exceptions import (
     FileFormatException,
     FilePermissionException,
     BasedOnException,
+    DeleteUserFileException,
 )
 from app.permissions import StorageFilePermission
 from app.models import FileTypeEnum
@@ -234,6 +238,24 @@ async def patch_file(
     )
 
     return storage_file
+
+
+@router.delete("/delete/user", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_from_group(
+    params: DeleteUserFile,
+    user_id: str = Depends(get_current_user_uuid),
+    session: AsyncSession = Depends(async_db.get_async_session),
+):
+    storage_file = await select_file(file_id=params.file_id, session=session)
+    if user_id not in [str(user.id) for user in storage_file.users]:
+        raise FilePermissionException
+
+    if params.to_user_id == storage_file.creator_id:
+        raise DeleteUserFileException
+
+    await remove_user_from_file(
+        user_id=params.to_user_id, storage_file=storage_file, session=session
+    )
 
 
 @router.delete("/delete/{file_id}", status_code=status.HTTP_204_NO_CONTENT)

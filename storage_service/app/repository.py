@@ -12,6 +12,7 @@ from app.exceptions import (
     UserNotFoundException,
     FileExistsException,
     UsersNotFoundException,
+    UserAccessToStorageFile,
 )
 
 
@@ -147,4 +148,15 @@ async def update_file(
 
 async def remove_file(storage_file: StorageFile, session: AsyncSession):
     await session.delete(storage_file)
+    await session.commit()
+
+
+async def remove_user_from_file(
+    storage_file: StorageFile, user_id: str, session: AsyncSession
+):
+    user = await select_user(user_id=user_id, session=session)
+    if user not in storage_file.users:
+        raise UserAccessToStorageFile
+
+    storage_file.users.remove(user)
     await session.commit()

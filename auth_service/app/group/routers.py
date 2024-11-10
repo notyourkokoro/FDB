@@ -11,6 +11,7 @@ from app.group.schemas import (
     ParamsAddUserToGroup,
     ParamsAddUsersToGroup,
     GroupUpdate,
+    ParamsDeleteUserFromGroup,
 )
 from app.group.repository import (
     create_group,
@@ -100,7 +101,7 @@ async def rename_group(
 
 @router.delete("/delete/user", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_from_group(
-    params: ParamsAddUserToGroup,
+    params: ParamsDeleteUserFromGroup,
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ):

@@ -43,3 +43,7 @@ class AddUserFile(BaseModel):
 class AddUsersFile(BaseModel):
     to_user_ids: list[UUID]
     file_id: int
+
+
+class DeleteUserFile(AddUserFile):
+    pass

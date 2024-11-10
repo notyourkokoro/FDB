@@ -33,6 +33,16 @@ UserNotFoundException = HTTPException(
     detail="Пользователь с таким ИД не найден!",
 )
 
+UserAccessToStorageFile = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Пользователь не имеет доступа к данному файлу!",
+)
+
+DeleteUserFileException = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Пользователь не может удалить связь между своим файлом и собой!",
+)
+
 
 class UsersNotFoundException(HTTPException):
     def __init__(self, user_ids: list[str]):
