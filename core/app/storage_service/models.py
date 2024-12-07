@@ -1,3 +1,5 @@
+"""Работа с моделями файла и связей с ней осуствляется в модуле `storage_service`"""
+
 from uuid import UUID
 from enum import Enum
 
@@ -16,12 +18,20 @@ if TYPE_CHECKING:
 
 
 class FileTypeEnum(Enum):
+    """
+    Перечисление типов файлов
+    """
+
     csv = 1
     xlsx = 2
     xls = 3
 
 
 class FileType(Base):
+    """
+    ORM-модель типов файлов (таблица "file_types")
+    """
+
     __tablename__ = "file_types"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -29,6 +39,11 @@ class FileType(Base):
 
 
 class StorageFile(Base):
+    """
+    ORM-модель загружаемых пользователем
+    файлов (таблица "storage_files")
+    """
+
     __tablename__ = "storage_files"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
@@ -68,6 +83,11 @@ class StorageFile(Base):
 
 
 class UserFile(Base):
+    """
+    ORM-модель связи пользователя с файлом
+    (таблица "users_files")
+    """
+
     __tablename__ = "users_files"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -78,6 +98,11 @@ class UserFile(Base):
 
 
 class GroupFile(Base):
+    """
+    ORM-модель связи группы с файлом
+    (таблица "groups_files")
+    """
+
     __tablename__ = "groups_files"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

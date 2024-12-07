@@ -76,6 +76,7 @@ def upgrade() -> None:
     )
     # ### end Alembic commands ###
 
+    # Добавляем в базу типы файлов на основе enum
     op.bulk_insert(
         sa.table(
             "file_types",

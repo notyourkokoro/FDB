@@ -1,3 +1,5 @@
+"""Работа с моделями пользователя и группы осуществляется в модуле `auth_service`"""
+
 from uuid import UUID
 from typing import TYPE_CHECKING
 
@@ -14,6 +16,10 @@ if TYPE_CHECKING:
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """
+    ORM-модель пользователя (таблица "users")
+    """
+
     __tablename__ = "users"
 
     files: Mapped[list["StorageFile"]] = relationship(
@@ -29,6 +35,10 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
 
 class Group(Base):
+    """
+    ORM-модель пользовательной группы (таблица "groups")
+    """
+
     __tablename__ = "groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -47,6 +57,10 @@ class Group(Base):
 
 
 class UserGroup(Base):
+    """
+    ORM-модель связи пользователя и группы (таблица "users_groups")
+    """
+
     __tablename__ = "users_groups"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)

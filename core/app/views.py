@@ -9,14 +9,26 @@ from app.auth_service.models import User, Group
 
 
 class UserView(ModelView, model=User):
+    """
+    Вью ORM-модели пользователя для админ-панели
+    """
+
     column_list = [User.id, User.email, User.is_active, User.is_superuser]
 
 
 class FileTypeView(ModelView, model=FileType):
+    """
+    Вью ORM-модели типов файлов для админ-панели
+    """
+
     column_list = [FileType.id, FileType.name]
 
 
 class StorageFileView(ModelView, model=StorageFile):
+    """
+    Вью ORM-модели загружаемого пользователем файла для админ-панели
+    """
+
     column_list = [
         StorageFile.id,
         StorageFile.filename,
@@ -26,4 +38,8 @@ class StorageFileView(ModelView, model=StorageFile):
 
 
 class GroupView(ModelView, model=Group):
+    """
+    Вью ORM-модели пользовательной группы для админ-панели
+    """
+
     column_list = [Group.id, Group.creator_id, Group.name]
