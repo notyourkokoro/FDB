@@ -26,12 +26,33 @@ async def get_heatmap(
     method: CorrelationMethod = CorrelationMethod.SPEARMAN,
     data: dict = Depends(get_user_data),
 ) -> dict[str, dict[str, float | None]]:
+    """
+    Генерация тепловой карты для корреляционной матрицы
+
+    Parameters
+    ----------
+    params : ParamsForVisualizationCorrelation
+        Параметры для визуализации, такие как колонки и округление значений
+    method : CorrelationMethod, optional
+        Метод для получения корреляции (по умолчанию Spearman)
+    data : dict
+        Данные пользователя, которые будут
+        использоваться для построения тепловой карты
+
+    Returns
+    -------
+    dict
+        Словарь, содержащий значения корреляции
+    """
+    # Валидация данных по указанным колонкам
     df = CorrelationValidation.validate(df=data["data"], columns=params.columns)
 
+    # Построение корреляционной матрицы
     result = CorrelationBuilder.build(
         df=df, method=method, round_value=params.round_value, replace_nan=True
     )
 
+    # Возвращение результата в виде словаря
     return result.to_dict()
 
 
@@ -42,28 +63,55 @@ async def get_heatmap_fast(
     save_format: ImageFormat = ImageFormat.PNG,
     data: dict = Depends(get_user_data),
 ) -> FileResponse:
+    """
+    Быстрая генерация тепловой карты для
+    корреляционной матрицы в виде изображения
+
+    Parameters
+    ----------
+    params : ParamsForVisualizationCorrelationFast
+        Параметры для визуализации (включая название и параметры графика)
+    method : CorrelationMethod, optional
+        Метод для получения корреляции (по умолчанию Spearman)
+    save_format : ImageFormat, optional
+        Формат изображения для сохранения (по умолчанию PNG)
+    data : dict
+        Данные пользователя для построения тепловой карты
+
+    Returns
+    -------
+    FileResponse
+        Ответ, содержащий изображение тепловой карты
+    """
+    # Валидация данных по колонкам
     df = CorrelationValidation.validate(df=data["data"], columns=params.columns)
 
+    # Построение корреляционной матрицы
     result = CorrelationBuilder.build(df=df, method=method)
 
-    fig_width = result.shape[1]  # ширина зависит от количества столбцов
-    fig_height = result.shape[0]  # высота зависит от количества строк
+    # Установка размеров фигуры
+    fig_width = result.shape[1]  # Ширина зависит от количества столбцов
+    fig_height = result.shape[0]  # Высота зависит от количества строк
 
+    # Построение тепловой карты
     plt.figure(figsize=(fig_width, fig_height))
     sns.heatmap(
         result,
         annot=True,
-        cmap="YlGnBu",
-        cbar=params.cbar,
+        cmap="YlGnBu",  # Цветовая палитра
+        cbar=params.cbar,  # Нужен ли цветовой бар?
         xticklabels=result.columns,
         yticklabels=result.index,
     )
 
+    # Поворот подписей на оси X
     plt.xticks(rotation=params.x_lable_rotation)
 
+    # Добавление заголовка, если он задан
     if params.title is not None:
         plt.title(params.title)
 
+    # Сохранение изображения в файл и возвращение ссылки на него
     return TempStorage.return_file(save_format=save_format)
 
 
@@ -72,12 +120,33 @@ async def get_scatterplot(
     params: ParamsForScatterplot,
     data: dict = Depends(get_user_data),
 ) -> dict:
+    """
+    Генерация диаграммы рассеяния (scatter plot) для выбранных колонок
+
+    Parameters
+    ----------
+    params : ParamsForScatterplot
+        Параметры для построения scatter plot
+        (колонки для осей X и Y, опционально - hue, колонка,
+        по которой будет осуществляться цветовое разделение данных)
+    data : dict
+        Данные пользователя для построения диаграммы
+
+    Returns
+    -------
+    dict
+        Словарь данных для scatter plot
+    """
+    # Основные колонки для осей X и Y
     columns = [params.x_column, params.y_column]
+    # Добавление hue, если указано
     if params.hue_column is not None:
         columns.append(params.hue_column)
 
+    # Валидация данных по выбранным колонкам
     df = ValidateData.check_columns(df=data["data"], columns=columns)
 
+    # Возвращение диаграммы в формате словаря
     return df.to_dict()
 
 
@@ -87,27 +156,55 @@ async def get_scatterplot_fast(
     save_format: ImageFormat = ImageFormat.PNG,
     data: dict = Depends(get_user_data),
 ) -> dict:
+    """
+    Быстрая генерация диаграммы рассеяния
+    (scatter plot) в виде изображения
+
+    Parameters
+    ----------
+    params : ParamsForScatterplotFast
+        Параметры для построения scatter plot
+    save_format : ImageFormat, optional
+        Формат изображения для сохранения (по умолчанию PNG)
+    data : dict
+        Данные пользователя для построения диаграммы
+
+    Returns
+    -------
+    FileResponse
+        Ответ с изображением диаграммы рассеяния
+    """
+    # Основные колонки для осей X и Y
     columns = [params.x_column, params.y_column]
+    # Добавление hue, если указано
     if params.hue_column is not None:
         columns.append(params.hue_column)
 
+    # Валидация данных по выбранным колонкам
     df = ValidateData.check_columns(df=data["data"], columns=columns)
 
+    # Построение scatter plot
     plt.figure(figsize=(10, 6))
     sns.scatterplot(
         data=df,
         x=params.x_column,
         y=params.y_column,
         hue=params.hue_column,
+        # Цветовая палитра
         palette="viridis",
+        # Размер точек
         s=params.dot_size,
+        # Отображение легенды, если нужно
         legend="auto" if params.need_legend is True else False,
     )
 
+    # Подписи для осей
     plt.xlabel(params.x_column)
     plt.ylabel(params.y_column)
 
+    # Добавление заголовка, если указан
     if params.title is not None:
         plt.title(params.title)
 
+    # Сохранение изображения в файл и возвращение ссылки на него
     return TempStorage.return_file(save_format=save_format)

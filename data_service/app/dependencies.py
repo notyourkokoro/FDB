@@ -7,6 +7,7 @@ from app.requests import get_user_uuid
 from app.memory import RedisConnection
 
 
+# Объект для извлечения токена из заголовков HTTP
 security = HTTPBearer()
 
 
