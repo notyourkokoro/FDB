@@ -12,6 +12,12 @@ from app.database import Base
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """
+    ORM-модель пользователя (таблица "users").
+    Работа с моделью осуществляется
+    в модуле `auth_service`
+    """
+
     __tablename__ = "users"
 
     files: Mapped[list["StorageFile"]] = relationship(
@@ -27,12 +33,20 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
 
 class FileTypeEnum(Enum):
+    """
+    Перечисление типов файлов
+    """
+
     csv = 1
     xlsx = 2
     xls = 3
 
 
 class FileType(Base):
+    """
+    ORM-модель типов файлов (таблица "file_types")
+    """
+
     __tablename__ = "file_types"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -40,6 +54,11 @@ class FileType(Base):
 
 
 class StorageFile(Base):
+    """
+    ORM-модель загружаемых пользователем
+    файлов (таблица "storage_files")
+    """
+
     __tablename__ = "storage_files"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
@@ -79,6 +98,11 @@ class StorageFile(Base):
 
 
 class UserFile(Base):
+    """
+    ORM-модель связи пользователя с файлом
+    (таблица "users_files")
+    """
+
     __tablename__ = "users_files"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -89,6 +113,11 @@ class UserFile(Base):
 
 
 class Group(Base):
+    """
+    ORM-модель пользовательной группы (таблица "groups").
+    Основная работа с моделью осуществляется в модуле `auth_service`
+    """
+
     __tablename__ = "groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -105,6 +134,11 @@ class Group(Base):
 
 
 class GroupFile(Base):
+    """
+    ORM-модель связи группы с файлом
+    (таблица "groups_files")
+    """
+
     __tablename__ = "groups_files"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -115,6 +149,11 @@ class GroupFile(Base):
 
 
 class UserGroup(Base):
+    """
+    ORM-модель связи пользователя и группы (таблица "users_groups").
+    Работа с моделью осуществляется в модуле `auth_service`
+    """
+
     __tablename__ = "users_groups"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
