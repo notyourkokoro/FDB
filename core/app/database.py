@@ -39,7 +39,7 @@ class AsyncDataBase:
         """
         Получение ассихронной сессии
 
-        Returns
+        Yields
         -------
         AsyncGenerator[AsyncSession, None]
             Генератор ассихронных сессий

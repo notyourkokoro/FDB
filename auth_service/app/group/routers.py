@@ -24,6 +24,7 @@ from app.group.repository import (
 )
 from app.group.exceptions import GroupPermissionException, DeleteUserFromGroupException
 
+# Создание маршрутизатора для работы с группами
 router = APIRouter(prefix="/groups", tags=["groups"])
 
 
@@ -32,6 +33,21 @@ async def get_groups(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> Sequence[GroupRead]:
+    """
+    Получить список групп, в которых состоит Объект текущего пользователя
+
+    Parameters
+    ----------
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+
+    Returns
+    -------
+    Sequence[GroupRead]
+        Список групп пользователя
+    """
     groups = await select_user_groups(user_id=user.id, session=session)
     return groups
 
@@ -42,6 +58,23 @@ async def get_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> GroupRead:
+    """
+    Получить информацию о пользовательскойгруппе по идентификатору
+
+    Parameters
+    ----------
+    group_id : int
+        Идентификатор группы
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+
+    Returns
+    -------
+    GroupRead
+        Информация о группе
+    """
     group = await select_group(group_id=group_id, session=session)
     return group
 
@@ -52,6 +85,23 @@ async def create_user_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> GroupRead:
+    """
+    Создать новую пользовательскую группу
+
+    Parameters
+    ----------
+    params : GroupCreate
+        Параметры для создания группы
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+
+    Returns
+    -------
+    GroupRead
+        Информация о созданной группе
+    """
     group = await create_group(name=params.name, user_id=user.id, session=session)
     return group
 
@@ -62,6 +112,18 @@ async def add_userlink_to_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ):
+    """
+    Добавить пользователя в группу
+
+    Parameters
+    ----------
+    params : ParamsAddUserToGroup
+        Параметры добавления пользователя в группу
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+    """
     await add_users_to_group(
         user_id=user.id,
         to_user_ids=[params.user_id],
@@ -76,6 +138,18 @@ async def add_userlinks_to_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ):
+    """
+    Добавить нескольких пользователей в группу
+
+    Parameters
+    ----------
+    params : ParamsAddUsersToGroup
+        Параметры добавления пользователей в группу
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+    """
     await add_users_to_group(
         user_id=user.id,
         to_user_ids=params.user_ids,
@@ -90,6 +164,23 @@ async def rename_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ) -> GroupRead:
+    """
+    Переименовать группу
+
+    Parameters
+    ----------
+    params : GroupUpdate
+        Новое имя группы
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+
+    Returns
+    -------
+    GroupRead
+        Информация о обновленной группе
+    """
     group = await select_group(group_id=params.group_id, session=session)
     if user.id not in [user.id for user in group.users]:
         raise GroupPermissionException
@@ -104,6 +195,18 @@ async def delete_user_from_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ):
+    """
+    Удалить пользователя из группы
+
+    Parameters
+    ----------
+    params : ParamsDeleteUserFromGroup
+        Параметры для удаления пользователя из группы
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+    """
     group = await select_group(group_id=params.group_id, session=session)
     if user.id not in [user.id for user in group.users]:
         raise GroupPermissionException
@@ -120,6 +223,18 @@ async def delete_group(
     user: User = Depends(current_user),
     session: AsyncSession = Depends(async_db.get_async_session),
 ):
+    """
+    Удалить группу
+
+    Parameters
+    ----------
+    group_id : int
+        Идентификатор группы
+    user : User
+        Объект текущего пользователя
+    session : AsyncSession
+        Асинхронная сессия базы данных
+    """
     group = await select_group(group_id=group_id, session=session)
     if user.id not in [user.id for user in group.users]:
         raise GroupPermissionException

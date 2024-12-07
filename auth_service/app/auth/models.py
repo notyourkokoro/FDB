@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """
+    ORM-модель пользователя (таблица "users")
+    """
+
     __tablename__ = "users"
 
     groups: Mapped[list["Group"]] = relationship(

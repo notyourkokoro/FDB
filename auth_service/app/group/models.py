@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class Group(Base):
+    """
+    ORM-модель пользовательной группы (таблица "groups")
+    """
+
     __tablename__ = "groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -23,6 +27,10 @@ class Group(Base):
 
 
 class UserGroup(Base):
+    """
+    ORM-модель связи пользователя и группы (таблица "users_groups")
+    """
+
     __tablename__ = "users_groups"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
