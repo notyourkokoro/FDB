@@ -20,6 +20,7 @@ from app.statistic.builders import (
     ORBuilder,
     OutliersBuilder,
 )
+from app.statistic.exceptions import NeedColumnsException
 from app.data.builders import DataBuilder
 from app.utils import TempStorage
 from app.validation import ValidateData
@@ -56,6 +57,8 @@ async def get_descriptive_statistics(
     """
     # Проверка DataFrame на наличия необходимых столбцов
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    # Проверка столбов DataFrame на числовой тип данных
+    ValidateData.check_numeric_type(df, df.columns)
     # Генерация описательной статистики
     datas = DataBuilder.build(df=df, groups=params.groups)
 
@@ -116,6 +119,8 @@ async def get_outliers(
     # Проверка DataFrame на наличия необходимых столбцов
     y_column = params.y_column
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    # Проверка столбов DataFrame на числовой тип данных
+    ValidateData.check_numeric_type(df, df.columns)
 
     if y_column is not None and y_column not in df.columns:
         raise ColumnsNotFoundException([y_column])
@@ -191,6 +196,9 @@ async def get_correlation(
     dict
         Результат вычисления корреляции
     """
+    if len(params.left_columns) == 0 or len(params.right_columns) == 0:
+        raise NeedColumnsException
+
     # Проверка DataFrame на наличия дубликатов столбцов в левых и правых колонках
     if set(params.left_columns) & set(params.right_columns):
         raise ColumnsDuplicateException(
@@ -201,6 +209,8 @@ async def get_correlation(
     df = ValidateData.check_columns(
         df=data["data"], columns=(params.left_columns + params.right_columns)
     )
+    # Проверка столбов DataFrame на числовой тип данных
+    ValidateData.check_numeric_type(df, df.columns)
     # Получение данных с корреляцией
     result = CorrBuilder.build(
         df=df,
@@ -351,6 +361,8 @@ async def get_or_table(
 
     # Проверка DataFrame на наличия необходимых столбцов
     df = ValidateData.check_columns(df=data["data"], columns=columns)
+    # Проверка столбов DataFrame на числовой тип данных
+    ValidateData.check_numeric_type(df, df.columns)
 
     # Получение таблицы с OR и 95% CI
     builder = ORBuilder(

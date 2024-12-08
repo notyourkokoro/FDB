@@ -268,6 +268,8 @@ async def recovery_data(
     """
     # Проверка наличия указанных колонок
     df = ValidateData.check_columns(df=data["data"], columns=params.columns)
+    # Проверка столбов DataFrame на числовой тип данных
+    ValidateData.check_numeric_type(df, df.columns)
 
     # Восстановление данных с использованием указанного метода
     recovery_df = RecoveryDataBuilder.recovery(
