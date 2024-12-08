@@ -4,15 +4,19 @@ from fastapi.exceptions import HTTPException
 
 class UsersNotFoundException(HTTPException):
     """
-    Исключение, выбрасываемое при отсутствии пользователей с заданными идентификаторами
-
-    Parameters
-    ----------
-    user_ids : list[str]
-        Список идентификаторов пользователей, которые не найдены
+    Исключение, выбрасываемое при отсутствии
+    пользователей с заданными идентификаторами
     """
 
     def __init__(self, user_ids: list[str]):
+        """
+        Инициализация исключения
+
+        Parameters
+        ----------
+        user_ids : list[str]
+            Список идентификаторов пользователей, которые не найдены
+        """
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Пользователи с такими ИД не найдены: {ids}!".format(
@@ -25,14 +29,18 @@ class UsersInGroupExistsException(HTTPException):
     """
     Исключение, выбрасываемое при попытке добавить пользователей,
     уже имеющих доступ к группе
-
-    Parameters
-    ----------
-    user_ids : list[str]
-        Список идентификаторов пользователей, которые уже состоят в группе
     """
 
     def __init__(self, user_ids: list[str]):
+        """
+        Инициализация исключения
+
+        Parameters
+        ----------
+        user_ids : list[str]
+            Список идентификаторов пользователей,
+            которые уже состоят в группе
+        """
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="К данной группе у пользователей: {ids} - уже есть доступ!".format(

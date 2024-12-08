@@ -1,4 +1,17 @@
 def calculate_bmi_group(bmi: float | int) -> int:
+    """
+    Определяет группу BMI по его значению
+
+    Parameters
+    ----------
+    bmi : float | int
+        Значение BMI
+
+    Returns
+    -------
+    int
+        Группа BMI
+    """
     if bmi < 16:
         return 1
     if 16 <= bmi < 18.5:

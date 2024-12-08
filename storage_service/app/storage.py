@@ -9,7 +9,7 @@ class StogareController:
     Класс для работы с файловым хранилищем.
     Управляет директориями и файлами
 
-    Parameters
+    Attributes
     ----------
     basedir : str
         Путь к директории хранилища

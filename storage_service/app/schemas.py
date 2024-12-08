@@ -7,7 +7,7 @@ class StorageFileBase(BaseModel):
     """
     Базовая модель для представления файлов
 
-    Parameters
+    Attributes
     ----------
     id : int
         Идентификатор файла
@@ -23,7 +23,7 @@ class StorageFileRead(StorageFileBase):
     """
     Схема для представления файла с дополнительной информацией
 
-    Parameters
+    Attributes
     ----------
     creator_id : UUID
         Идентификатор создателя файла
@@ -57,7 +57,7 @@ class StorageFileReadFull(StorageFileRead):
     Схема для представления полного описания файла,
     включая информацию о исходном файл
 
-    Parameters
+    Attributes
     ----------
     version : int
         Версия файла
@@ -73,7 +73,7 @@ class StorageFileList(StorageFileBase):
     """
     Схема для представления списка файлов
 
-    Parameters
+    Attributes
     ----------
     creator_id : UUID
         Идентификатор создателя файла
@@ -92,7 +92,7 @@ class StorageFilePatch(BaseModel):
     """
     Схема для изменения информации о файле
 
-    Parameters
+    Attributes
     ----------
     filename : str
         Новое имя файла
@@ -105,7 +105,7 @@ class AddUserFile(BaseModel):
     """
     Схема для добавления связи между файлом и пользователем
 
-    Parameters
+    Attributes
     ----------
     to_user_id : UUID
         Идентификатор пользователя, которому нужно предоставить доступ к файлу
@@ -121,7 +121,7 @@ class AddUsersFile(BaseModel):
     """
     Схема для добавления свяжей между файлом и несколькоми пользователям
 
-    Parameters
+    Attributes
     ----------
     to_user_ids : list[UUID]
         Список идентификаторов пользователей, которым нужно предоставить доступ к файлу
@@ -146,7 +146,7 @@ class AddGroupFile(BaseModel):
     """
     Схема для добавления связи между файлом и группой
 
-    Parameters
+    Attributes
     ----------
     group_id : int
         Идентификатор группы, к которой нужно привязать файл
